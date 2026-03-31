@@ -63,24 +63,27 @@ export const ShinyButton = styled.a<IShinyButton>`
     height: 44px;
     font-size: 16px;
   }
-  ${media.max430} {
+  ${media.max540} {
     width: 100%;
-    padding: 26px 26px;
+    height: 37px;
+    padding: 15px 20px;
+    font-size: 12px;
   }
+  /* max430 задаёт height: 37px — вертикальный padding не должен суммарно превышать высоту
+     (иначе на iPhone 12/12 Pro при 390px кнопка «ломается»). Оставляем компактные отступы. */
   ${media.max390} {
-    padding: 25px 25px;
+    padding: 8px 14px;
   }
   ${media.max384} {
-    padding: 22px 22px;
+    padding: 8px 13px;
   }
   ${media.max375} {
-    padding: 18px 18px;
+    padding: 8px 12px;
   }
   ${media.max360} {
-    padding: 15px 15px;
+    padding: 8px 11px;
   }
   ${media.max320} {
-    padding: 13px 13px;
-    font-size: 14px;
+    padding: 6px 10px;
   }
 `;

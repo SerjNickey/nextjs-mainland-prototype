@@ -24,6 +24,8 @@ import {
 } from "../../store/registrationApi";
 import type { ValidationState } from "../../components/PasswordInput/PasswordInput";
 import SimpleInput from "../../components/SimpleInput/SimpleInput";
+import { isUsernameFormatValid } from "../../components/SimpleInput/usernameValidation";
+import { isEmailFormatValid } from "../../components/SimpleInput/emailValidation";
 import {
   SimpleInputPopupRulesBlock,
   SimpleInputPopupWarningIcon,
@@ -49,6 +51,8 @@ const COPY = {
     bonusCode: "Бонус код",
     optional: "* Необязательно",
     agreementError: "Подтвердите согласие, чтобы продолжить.",
+    usernameRequired: "Поле обязательно для заполнения.",
+    emailInvalid: "Введите корректный адрес электронной почты.",
     nicknameInUse: "Такое имя уже используется.",
     emailInUse: "Такой адрес уже используется.",
     inviteCodeError: "Incorrect Invitation Code.",
@@ -95,6 +99,8 @@ const COPY = {
     bonusCode: "Bonus Code",
     optional: "* Optional",
     agreementError: "Confirm to proceed.",
+    usernameRequired: "This field is required.",
+    emailInvalid: "Please enter a valid email address.",
     nicknameInUse: "The username is already in use.",
     emailInUse: "The e-mail address is already in use.",
     inviteCodeError: "Incorrect Invitation Code.",
@@ -137,6 +143,7 @@ const COPY = {
 const API_ERROR_DETAILS = {
   nickname: "Username cannot be accepted. Please choose another.",
   email: "E-mail cannot be accepted. Please choose another.",
+  emailInvalid: "E-mail address is not valid.",
   inviteCode: "Code is invalid.",
 } as const;
 
@@ -219,8 +226,9 @@ const RegistrationFormBlock = ({
   const isSubmitDisabled = useMemo(
     () =>
       !nicknameReg ||
+      !isUsernameFormatValid(nicknameReg) ||
       !!nicknameError ||
-      !emailReg ||
+      !isEmailFormatValid(emailReg) ||
       !!emailError ||
       !countryReg ||
       !countryCodeReg ||
@@ -240,8 +248,20 @@ const RegistrationFormBlock = ({
   );
 
   const handleSubmit = async () => {
-    setNicknameError(!nicknameReg ? "Please enter your username." : "");
-    setEmailError(!emailReg ? "Please enter your email." : "");
+    setNicknameError(
+      !nicknameReg
+        ? copy.usernameRequired
+        : !isUsernameFormatValid(nicknameReg)
+          ? copy.usernameRequired
+          : ""
+    );
+    setEmailError(
+      !emailReg
+        ? copy.usernameRequired
+        : !isEmailFormatValid(emailReg)
+          ? copy.emailInvalid
+          : ""
+    );
     setPasswordError(
       !passwordReg
         ? "Please enter your password."
@@ -254,7 +274,8 @@ const RegistrationFormBlock = ({
 
     if (
       !nicknameReg ||
-      !emailReg ||
+      !isUsernameFormatValid(nicknameReg) ||
+      !isEmailFormatValid(emailReg) ||
       !countryReg ||
       !countryCodeReg ||
       !passwordReg ||
@@ -281,6 +302,8 @@ const RegistrationFormBlock = ({
       const errors = (err as { data?: { errors?: unknown } })?.data?.errors;
       if (hasErrorDetail(errors, API_ERROR_DETAILS.nickname))
         setNicknameError(copy.nicknameInUse);
+      if (hasErrorDetail(errors, API_ERROR_DETAILS.emailInvalid))
+        setEmailError(copy.emailInvalid);
       if (hasErrorDetail(errors, API_ERROR_DETAILS.email))
         setEmailError(copy.emailInUse);
       if (hasErrorDetail(errors, API_ERROR_DETAILS.inviteCode))
@@ -346,6 +369,9 @@ const RegistrationFormBlock = ({
                     </SimpleInputPopupRulesBlock>
                   }
                   popupMinWidth={280}
+                  isUsername
+                  usernameRequiredError={copy.usernameRequired}
+                  usernameInvalidError={copy.usernameRequired}
                 />
                 <SimpleInput
                   value={emailReg}
@@ -355,6 +381,9 @@ const RegistrationFormBlock = ({
                   errorEnabled
                   errorText={emailError}
                   errorHandler={setEmailError}
+                  isEmail
+                  emailRequiredError={copy.usernameRequired}
+                  emailInvalidError={copy.emailInvalid}
                 />
               </S.NicknameEmailRow>
               <PasswordInput

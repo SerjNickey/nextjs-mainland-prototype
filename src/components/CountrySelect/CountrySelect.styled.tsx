@@ -6,6 +6,7 @@ import arrowWhite from "../../assets/images/PasswordInput/arrow_white.webp";
 interface IStyledInput {
   isError?: boolean;
   hasValue?: boolean;
+  isValid?: boolean;
 }
 
 interface IToggleButton {
@@ -55,13 +56,20 @@ export const InputWrapper = styled.div`
   &[data-error="true"]::before {
     color: #d70022;
   }
+
+  /* Успешная валидация: зелёный цвет лейбла (как в SimpleInput) */
+  &[data-valid="true"]:not([data-error="true"])::before {
+    color: rgb(0, 140, 84);
+  }
 `;
 
 export const StyledInput = styled.input<IStyledInput>`
   width: 390px;
   height: 44px;
   background: rgba(24, 24, 24, 1);
-  border: 1px solid ${({ isError }) => (isError ? "#d70022" : "#5b5b5b")};
+  border: 1px solid
+    ${({ isError, isValid }) =>
+      isError ? "#d70022" : isValid ? "rgb(0, 140, 84)" : "#5b5b5b"};
   outline: none;
   padding: 0 40px 0 10px;
   font-family: "Montserrat";
@@ -193,7 +201,8 @@ export const DropdownListPortal = styled.div<{
   border-radius: 0 0 6px 6px;
   max-height: 200px;
   overflow-y: auto;
-  z-index: 1100;
+  /* Выше QRFModal Overlay (1300), иначе список рисуется под затемнением */
+  z-index: 1420;
 
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.35) transparent;

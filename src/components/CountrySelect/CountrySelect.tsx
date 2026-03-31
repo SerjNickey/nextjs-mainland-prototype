@@ -167,6 +167,7 @@ const CountrySelect: React.FC<CountrySelectProps> = ({
 }) => {
   const { yourLang } = useSelector((state: RootState) => state.registration);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   const getCountriesArray = () =>
     yourLang === "ru" ? countriesRu : countriesEn;
@@ -228,12 +229,14 @@ const CountrySelect: React.FC<CountrySelectProps> = ({
     setInputValue(country.name);
     setSelectedCountryCode(country.code);
     setIsDropdownOpen(false);
+    setHasInteracted(true);
     if (errorHandler) errorHandler("");
   };
 
   const toggleDropdown = () => {
     const willOpen = !isDropdownOpen;
     setIsDropdownOpen(willOpen);
+    if (!willOpen) setHasInteracted(true); // зелёная подсветка только после закрытия
     if (willOpen) setFilteredCountries(getCountriesArray());
   };
 
@@ -248,12 +251,16 @@ const CountrySelect: React.FC<CountrySelectProps> = ({
       setIsDropdownOpen(false);
     } else if (e.key === "Escape") {
       setIsDropdownOpen(false);
+      setHasInteracted(true);
     }
   };
 
   const handleBlur = () => {
     setTimeout(() => {
-      if (!isDropdownOpen) autoSelectIndiaIfNoMatch();
+      if (!isDropdownOpen) {
+        setHasInteracted(true);
+        autoSelectIndiaIfNoMatch();
+      }
     }, 200);
   };
 
@@ -299,6 +306,7 @@ const CountrySelect: React.FC<CountrySelectProps> = ({
         !dropdownRef.current.contains(event.target as Node)
       ) {
         setIsDropdownOpen(false);
+        setHasInteracted(true);
         autoSelectIndiaIfNoMatch();
       }
     };
@@ -308,7 +316,9 @@ const CountrySelect: React.FC<CountrySelectProps> = ({
 
   const placeholderText = yourLang === "ru" ? "Страна" : "Country";
   const hasValue = inputValue !== "";
+  const hasSelectedCountry = selectedCountryCode !== "";
   const hasError = errorEnabled && errorText !== "";
+  const shouldShowValid = hasInteracted && hasSelectedCountry;
 
   return (
     <CountryInputSelectContainer>
@@ -316,6 +326,7 @@ const CountrySelect: React.FC<CountrySelectProps> = ({
         ref={wrapperRef}
         data-placeholder={placeholderText}
         data-has-value={hasValue}
+        data-valid={shouldShowValid}
         data-error={hasError}
       >
         <StyledInput
@@ -332,6 +343,7 @@ const CountrySelect: React.FC<CountrySelectProps> = ({
           placeholder={hasValue ? "" : placeholderText}
           isError={hasError}
           hasValue={hasValue}
+          isValid={shouldShowValid}
         />
         <ToggleButton
           onClick={toggleDropdown}

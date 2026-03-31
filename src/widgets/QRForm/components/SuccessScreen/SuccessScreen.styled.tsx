@@ -28,6 +28,8 @@ export const SuccessTitle = styled.div`
   font-weight: 700;
   font-size: 18px;
   color: #ffffff;
+  text-align: center;
+  text-transform: none;
 `;
 export const SuccessText = styled.div`
   max-width: 330px;

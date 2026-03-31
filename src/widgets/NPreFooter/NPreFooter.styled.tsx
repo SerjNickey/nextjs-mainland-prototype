@@ -215,10 +215,16 @@ export const SocialIconLink = styled.a`
     background: rgba(132, 133, 138, 1);
   }
 
-  img {
-    width: 24px;
-    height: 24px;
+  img,
+  svg {
+    // width: 24px;
+    // height: 24px;
     object-fit: contain;
+    flex-shrink: 0;
+  }
+
+  svg {
+    display: block;
   }
 `;
 
@@ -490,24 +496,24 @@ export const DocModalBody = styled.div`
   }
   &::-webkit-scrollbar-track {
     background: ${({
-      theme,
-    }: {
-      theme?: { scrollbar?: { scrollbarTrack?: string } };
-    }) => theme?.scrollbar?.scrollbarTrack ?? "#f1f1f1"};
+  theme,
+}: {
+  theme?: { scrollbar?: { scrollbarTrack?: string } };
+}) => theme?.scrollbar?.scrollbarTrack ?? "#f1f1f1"};
     border-radius: 10px;
   }
   &::-webkit-scrollbar-thumb {
     background: ${({
-      theme,
-    }: {
-      theme?: {
-        scrollbar?: { scrollbarThumb?: string; scrollbarTrack?: string };
-      };
-    }) => theme?.scrollbar?.scrollbarThumb ?? "#888"};
+  theme,
+}: {
+  theme?: {
+    scrollbar?: { scrollbarThumb?: string; scrollbarTrack?: string };
+  };
+}) => theme?.scrollbar?.scrollbarThumb ?? "#888"};
     border-radius: 10px;
     border: 3px solid
       ${({ theme }: { theme?: { scrollbar?: { scrollbarTrack?: string } } }) =>
-        theme?.scrollbar?.scrollbarTrack ?? "#f1f1f1"};
+    theme?.scrollbar?.scrollbarTrack ?? "#f1f1f1"};
   }
   &::-webkit-scrollbar-thumb:hover {
     background: ${({
@@ -519,12 +525,12 @@ export const DocModalBody = styled.div`
   /* Firefox */
   scrollbar-width: thin;
   scrollbar-color: ${({
-    theme,
-  }: {
-    theme?: {
-      scrollbar?: { scrollbarThumb?: string; scrollbarTrack?: string };
-    };
-  }) =>
+      theme,
+    }: {
+      theme?: {
+        scrollbar?: { scrollbarThumb?: string; scrollbarTrack?: string };
+      };
+    }) =>
     theme?.scrollbar
       ? `${theme.scrollbar.scrollbarThumb ?? "#888"} ${theme.scrollbar.scrollbarTrack ?? "#f1f1f1"}`
       : "#888 #f1f1f1"};

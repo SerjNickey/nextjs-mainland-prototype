@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { media } from "../../styles/breakpoints";
 
 // Иконки языков
 export const LanguageIcon = styled.div`
@@ -42,6 +43,12 @@ export const Popup = styled.div`
   display: flex;
   gap: 12px;
   animation: fadeIn 0.2s ease-out;
+
+  ${media.max430} {
+    padding: 0;
+    top: 7px;
+    left: 49px;
+  }
 
   @keyframes fadeIn {
     from {

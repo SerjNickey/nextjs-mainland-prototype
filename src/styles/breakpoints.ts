@@ -41,9 +41,11 @@ export const breakpoints = {
   min1360: "1360px", // 1360×768
   min1366: "1366px", // 1366×768
   min1440: "1440px", // 1440×1080
+  min1463: "1463px", // 1463×823
   min1536: "1536px", // 1920×1080/1200 @ 125%
   min1600: "1600px", // 1600×900/1024/1200
   min1680: "1680px", // 1680×1050
+  min1707: "1707px", // 1707×960
   min1720: "1720px", // 3440×1440 @ 200%
   min1920: "1920px", // 1920×1080 / 1920×1200
   min1965: "1965px", // 3440×1440 @ 175%
@@ -98,9 +100,11 @@ export const media = {
   min1360: `@media (min-width: ${breakpoints.min1360})`,
   min1366: `@media (min-width: ${breakpoints.min1366})`,
   min1440: `@media (min-width: ${breakpoints.min1440})`,
+  min1463: `@media (min-width: ${breakpoints.min1463})`,
   min1536: `@media (min-width: ${breakpoints.min1536})`,
   min1600: `@media (min-width: ${breakpoints.min1600})`,
   min1680: `@media (min-width: ${breakpoints.min1680})`,
+  min1707: `@media (min-width: ${breakpoints.min1707})`,
   min1720: `@media (min-width: ${breakpoints.min1720})`,
   min1920: `@media (min-width: ${breakpoints.min1920})`,
   min1965: `@media (min-width: ${breakpoints.min1965})`,

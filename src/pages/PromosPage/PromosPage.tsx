@@ -14,8 +14,11 @@
  */
 import { useMemo, useState, useCallback, useEffect, useContext } from "react";
 import { useSelector } from "react-redux";
+import HeaderMobile from "../../widgets/HeaderMobile/HeaderMobile";
 import StickyHeader from "../../widgets/StickyHeader/StickyHeader";
+import SEO from "../../components/SEO/SEO";
 import PreFooter from "../../widgets/NPreFooter/NPreFooter";
+import PreFooterMobile from "../../widgets/PreFooterMobile/PreFooterMobile";
 import Footer from "../../widgets/Footer/Footer";
 import { useGetBasePageQuery } from "../../store/basePageApi";
 import { useGetPromosPageQuery } from "../../store/promosPageApi";
@@ -52,6 +55,16 @@ const getFileUrl = (source?: { file?: unknown }) => {
   const fileObject = source?.file as { url?: unknown } | undefined;
   if (typeof fileObject?.url === "string") return normalizeUrl(fileObject.url);
   return "";
+};
+
+const hasRichTextContent = (raw?: string) => {
+  if (typeof raw !== "string") return false;
+  const plainText = raw
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;|&#160;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return plainText.length > 0;
 };
 
 /**
@@ -162,15 +175,15 @@ const CategoryIcon = ({ categoryId }: { categoryId: number }) => {
  */
 export type PromoCardItem = {
   id: string;
-  category: number;
+  categories: number[];
   title: string;
   subtitle: string;
   imageUrl?: string;
   buttonText: string;
   showButton: boolean;
   action:
-    | { type: "link"; url: string; external: boolean }
-    | { type: "popup"; content: PopupContent };
+  | { type: "link"; url: string; external: boolean }
+  | { type: "popup"; content: PopupContent };
 };
 
 /** Контент модального окна при action.type === "popup" (заголовок, описание, T&C, CTA-кнопка). */
@@ -193,6 +206,7 @@ export type PopupContent = {
 type PromosPageData = {
   title?: string;
   promos_title?: string;
+  terms_and_conditions_title?: string;
   promo_categories?: Array<{
     type?: string;
     id?: string;
@@ -207,6 +221,7 @@ type PromosPageData = {
     id?: string;
     value?: {
       category?: number;
+      categories?: number[] | null;
       title?: string;
       subtitle?: string;
       image?: { file?: string };
@@ -218,14 +233,10 @@ type PromosPageData = {
         value?: {
           extra_button_text?: string;
           link?: string;
-          title?: string;
-          subtitle?: string;
           note?: string;
           button_text?: string;
           button_link?: string;
-          image?: { file?: string };
           description?: string;
-          terms_and_conditions_title?: string;
           terms_and_conditions?: string;
         };
       }>;
@@ -244,19 +255,35 @@ function isPromoActive(start?: string | null, end?: string | null): boolean {
   return true;
 }
 
+function normalizeCategoryIds(
+  categoriesRaw: unknown,
+  legacyCategoryRaw: unknown
+): number[] {
+  if (Array.isArray(categoriesRaw)) {
+    return categoriesRaw
+      .filter((x): x is number => typeof x === "number")
+      .filter((x, i, arr) => arr.indexOf(x) === i);
+  }
+  if (typeof legacyCategoryRaw === "number") return [legacyCategoryRaw];
+  return [];
+}
+
 /**
  * Преобразует data.promos из API в массив PromoCardItem.
  * - Пропускает записи без value, с active === false, без title, вне дат.
  * - Берёт первый элемент extra: link (с url) → action link; popup (с value) → action popup; иначе showButton = false.
  */
-function getCardsFromData(data: PromosPageData): PromoCardItem[] {
+function getCardsFromData(
+  data: PromosPageData,
+  globalTermsTitle?: string
+): PromoCardItem[] {
   const raw = data?.promos ?? [];
   if (!Array.isArray(raw)) return [];
   const result: PromoCardItem[] = [];
   for (const item of raw) {
     const v = item.value;
     if (!v || v.active === false) continue;
-    const category = typeof v.category === "number" ? v.category : 1;
+    const categories = normalizeCategoryIds(v.categories, v.category);
     const title = typeof v.title === "string" && v.title.trim() ? v.title : "";
     if (!title) continue;
     if (!isPromoActive(v.start_date, v.end_date)) continue;
@@ -279,18 +306,23 @@ function getCardsFromData(data: PromosPageData): PromoCardItem[] {
       showButton = true;
     } else if (extra?.type === "popup" && extra.value) {
       const x = extra.value;
+      const termsBody =
+        typeof x.terms_and_conditions === "string"
+          ? x.terms_and_conditions
+          : undefined;
+      const hasTerms = hasRichTextContent(termsBody);
       action = {
         type: "popup",
         content: {
-          title: x.title,
-          subtitle: x.subtitle,
+          title,
+          subtitle: typeof v.subtitle === "string" ? v.subtitle : "",
           note: x.note,
           buttonText: x.button_text,
           buttonLink: x.button_link ? normalizeUrl(x.button_link) : undefined,
-          imageUrl: getFileUrl(x.image) || undefined,
+          imageUrl: getFileUrl(v.image) || undefined,
           description: x.description,
-          termsTitle: x.terms_and_conditions_title,
-          termsBody: x.terms_and_conditions,
+          termsTitle: hasTerms ? globalTermsTitle : undefined,
+          termsBody: hasTerms ? termsBody : undefined,
         },
       };
       showButton = true;
@@ -299,7 +331,7 @@ function getCardsFromData(data: PromosPageData): PromoCardItem[] {
     }
     result.push({
       id: String(item.id ?? Math.random().toString(36).slice(2)),
-      category,
+      categories,
       title,
       subtitle: typeof v.subtitle === "string" ? v.subtitle : "",
       imageUrl: getFileUrl(v.image) || undefined,
@@ -378,7 +410,11 @@ const PromosPage = ({ previewData }: PromosPageProps) => {
 
   /** Все карточки после фильтра по датам и active. */
   const allCards = useMemo(
-    () => getCardsFromData(pageData as PromosPageData),
+    () =>
+      getCardsFromData(
+        pageData as PromosPageData,
+        (pageData as PromosPageData)?.terms_and_conditions_title
+      ),
     [pageData]
   );
 
@@ -386,14 +422,14 @@ const PromosPage = ({ previewData }: PromosPageProps) => {
   const visibleCategories = useMemo(() => {
     return categories.filter((cat) => {
       if (cat.id === 1) return allCards.length > 0;
-      return allCards.some((c) => c.category === cat.id);
+      return allCards.some((c) => c.categories.includes(cat.id));
     });
   }, [categories, allCards]);
 
   /** Карточки для текущей категории: 1 = все, иначе по полю category. */
   const visibleCards = useMemo(() => {
     if (selectedCategory === 1) return allCards;
-    return allCards.filter((c) => c.category === selectedCategory);
+    return allCards.filter((c) => c.categories.includes(selectedCategory));
   }, [allCards, selectedCategory]);
 
   /** Если выбранная категория скрыта (нет карточек), переключаем на первую доступную. */
@@ -416,7 +452,7 @@ const PromosPage = ({ previewData }: PromosPageProps) => {
       }
     } else {
       setModalContent(card.action.content);
-      setTermsOpen(false);
+      setTermsOpen(true);
     }
   }, []);
 
@@ -457,6 +493,7 @@ const PromosPage = ({ previewData }: PromosPageProps) => {
 
   return (
     <S.Wrapper>
+      <HeaderMobile logoSrc={logoSrc} />
       <StickyHeader logoSrc={logoSrc} />
       <S.Content>
         {/* Табы категорий: только те, для которых есть карточки */}
@@ -500,9 +537,11 @@ const PromosPage = ({ previewData }: PromosPageProps) => {
                 <S.CardImage $imageUrl={card.imageUrl} aria-hidden />
                 <S.CardContent>
                   <S.CardTitle>{card.title}</S.CardTitle>
-                  {card.subtitle && (
-                    <S.CardSubtitle>{card.subtitle}</S.CardSubtitle>
-                  )}
+                  <S.CardTextWrap>
+                    {card.subtitle ? (
+                      <S.CardSubtitle>{card.subtitle}</S.CardSubtitle>
+                    ) : null}
+                  </S.CardTextWrap>
                   {card.showButton && (
                     <S.CardButton
                       type="button"
@@ -582,7 +621,7 @@ const PromosPage = ({ previewData }: PromosPageProps) => {
                   }}
                 />
               )}
-              {(modalContent.termsTitle || modalContent.termsBody) && (
+              {hasRichTextContent(modalContent.termsBody) && (
                 <S.ToggleBlock>
                   <S.ToggleHeader
                     type="button"
@@ -591,7 +630,7 @@ const PromosPage = ({ previewData }: PromosPageProps) => {
                     aria-expanded={termsOpen}
                   >
                     <span>
-                      {modalContent.termsTitle ?? "Terms & Conditions"}
+                      {modalContent.termsTitle?.trim() || "Terms & Conditions"}
                     </span>
                     <svg
                       className="chevron"
@@ -620,8 +659,15 @@ const PromosPage = ({ previewData }: PromosPageProps) => {
         </S.ModalOverlay>
       )}
 
-      <PreFooter />
-      <Footer />
+      <S.DesktopWrapper>
+        <SEO lang={yourLang} data={pageData} />
+        <PreFooter />
+        <Footer />
+      </S.DesktopWrapper>
+      <S.MobileWrapper>
+        <S.LocalWrapper><SEO lang={yourLang} data={pageData} /></S.LocalWrapper>
+        <PreFooterMobile />
+      </S.MobileWrapper>
     </S.Wrapper>
   );
 };

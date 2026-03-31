@@ -3,6 +3,12 @@
  * Используется блоком Community, меню More в GrandMenu и др., без зависимости виджетов друг от друга.
  */
 import { MEDIA_ORIGIN } from "../config/env";
+import {
+  cleanIncludedCountries,
+  cleanExcludedCountries,
+  isVisibleForCountry,
+  type ExcludedCountryEntry,
+} from "./countryVisibility";
 
 const normalizeUrl = (rawUrl: string) => {
   const trimmed = rawUrl.trim();
@@ -42,31 +48,15 @@ export type HomePageCommunityData = {
     name?: string;
     icon?: { file?: string };
     link?: string;
-    excluded_countries?: (string | null)[];
+    included_countries?: ExcludedCountryEntry[];
+    excluded_countries?: ExcludedCountryEntry[];
     locale?: string;
     active?: boolean;
   }>;
   communities_active?: boolean;
 } | null;
 
-function cleanExcludedCountries(raw: (string | null)[] | undefined): string[] {
-  if (!raw || !Array.isArray(raw)) return [];
-  return raw.map(String).filter((s) => s && s !== "null" && s !== "undefined");
-}
-
-function isExcludedByCountry(
-  excluded: string[] | undefined,
-  userCountryCode: string,
-  userCountryName: string
-): boolean {
-  if (!excluded || excluded.length === 0) return false;
-  const lower = (s: string) => s.toLowerCase().trim();
-  const code = lower(userCountryCode);
-  const name = lower(userCountryName);
-  return excluded.some(
-    (c) => lower(String(c)) === code || lower(String(c)) === name
-  );
-}
+export type { ExcludedCountryEntry };
 
 /**
  * Преобразует данные communities из homePageApi в массив CommunityItem с учётом страны.
@@ -80,14 +70,15 @@ export function getItemsFromData(
 ): CommunityItem[] {
   const raw = data?.communities ?? [];
   if (!Array.isArray(raw)) return [];
-  const excludedList = raw.map((item) => ({
+  const countryRules = raw.map((item) => ({
     item,
+    included: cleanIncludedCountries(item.included_countries),
     excluded: cleanExcludedCountries(item.excluded_countries),
   }));
-  let filtered = excludedList.filter(
-    ({ item, excluded }) =>
+  let filtered = countryRules.filter(
+    ({ item, included, excluded }) =>
       item.active !== false &&
-      !isExcludedByCountry(excluded, countryCode, countryName) &&
+      isVisibleForCountry(included, excluded, countryCode, countryName) &&
       typeof item.name === "string" &&
       item.name.trim() !== "" &&
       typeof item.link === "string" &&

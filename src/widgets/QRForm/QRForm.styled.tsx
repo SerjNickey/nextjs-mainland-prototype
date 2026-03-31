@@ -2,7 +2,7 @@ import styled from "styled-components";
 import { media } from "../../styles/breakpoints";
 
 export const QRFormContainer = styled.div`
-  padding: 0 0;
+  padding: 10px;
   max-width: 450px;
   width: 100%;
   height: auto;
@@ -47,6 +47,23 @@ export const NicknameEmailRow = styled.div`
   display: flex;
   flex-direction: row;
   gap: 10px;
+
+  ${media.max540} {
+    flex-direction: column;
+    gap: 8px;
+
+    & > * {
+      width: 100%;
+      max-width: none;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    & > * input {
+      width: 100% !important;
+      max-width: none !important;
+    }
+  }
 `;
 
 /** Строка: код приглашения + выбор страны — та же ширина, чтобы колонки совпадали с первой строкой */

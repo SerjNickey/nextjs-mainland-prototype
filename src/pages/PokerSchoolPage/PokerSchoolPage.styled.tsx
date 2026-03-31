@@ -55,6 +55,9 @@ export const PageLayout = styled.div`
   ${media.min1440} {
     zoom: 0.75; /* 1440×1080 */
   }
+  ${media.min1463} {
+    zoom: 0.762; /* 1463×823 */
+  }
   ${media.min1536} {
     zoom: 0.8; /* 1536×864/960, 1920×1080/1200 @ 125% */
   }
@@ -63,6 +66,9 @@ export const PageLayout = styled.div`
   }
   ${media.min1680} {
     zoom: 0.875; /* 1680×1050 */
+  }
+  ${media.min1707} {
+    zoom: 0.889; /* 1707×960 */
   }
   ${media.min1720} {
     zoom: 0.896; /* 1720×720, 3440×1440 @ 200% */
@@ -844,7 +850,7 @@ export const ArticleBox = styled.div`
   flex-direction: column;
   width: 100%;
   max-width: 630px;
-  height: 90vh;
+  /* Только max-height: иначе при короткой статье пустота на весь экран */
   max-height: 90vh;
   overflow: hidden;
   background: #181818;
@@ -932,7 +938,8 @@ export const ArticleTagsWrap = styled.div`
 `;
 
 export const ArticleBody = styled.div`
-  flex: 1 1 0;
+  /* 1 1 0 + родитель без фикс. height → basis 0, блок схлопывается, контент режется overflow:hidden */
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   padding-right: 16px;

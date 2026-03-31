@@ -14,6 +14,9 @@ import eyeClosedGrey from "../../assets/images/PasswordInput/eye_closed_grey.web
 
 const POPUP_WIDTH = 250;
 const POPUP_GAP = 12;
+const MOBILE_POPUP_BREAKPOINT = 540;
+const PASSWORD_INPUT_HEIGHT_PX = 44;
+const PASSWORD_LABEL_IDLE_TOP_PX = PASSWORD_INPUT_HEIGHT_PX / 2;
 
 const PASSWORD_RULES = {
   length: (s: string) => s.length >= 6 && s.length <= 20,
@@ -117,6 +120,8 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
   const [isCapsLockOn, setIsCapsLockOn] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  // После клика/фокуса показываем ошибку до тех пор, пока пароль не станет валидным
+  const [hasInteracted, setHasInteracted] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ left: 0, top: 0 });
 
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -134,15 +139,76 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
     !isPasswordValid &&
     (!showPopupOnlyWhenModalClosed || !qrfModalIsOpen);
 
+  const REQUIRED_ERROR_TEXT =
+    yourLang === "ru"
+      ? "Поле обязательно для заполнения."
+      : "This field is required.";
+  // Для сценария “до валидного пароля” используем тот же короткий текст,
+  // как у SimpleInput.
+  const INVALID_ERROR_TEXT = REQUIRED_ERROR_TEXT;
+
+  const syncInlineError = useCallback(
+    (password: string) => {
+      if (!errorEnabled) return;
+      if (!errorHandler) return;
+
+      // Если родитель выставил “свою” ошибку (не наши стандартные строки) — не трогаем.
+      const current = errorText ?? "";
+      const isOurError =
+        current === REQUIRED_ERROR_TEXT || current === INVALID_ERROR_TEXT;
+      if (hasError && !isOurError) return;
+
+      if (!password || password.length === 0) {
+        errorHandler(REQUIRED_ERROR_TEXT);
+        return;
+      }
+
+      const nextValidation = runValidation(password);
+      const nextIsValid = isFullyValid(nextValidation);
+      if (!nextIsValid) {
+        errorHandler(INVALID_ERROR_TEXT);
+        return;
+      }
+
+      errorHandler("");
+    },
+    [
+      errorEnabled,
+      errorHandler,
+      errorText,
+      hasError,
+      // runValidation / isFullyValid стабильны внутри рендера
+    ]
+  );
+
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const next = e.target.value;
       setValueInParent(next);
-      errorHandler?.("");
+      if (hasInteracted) {
+        syncInlineError(next);
+      } else {
+        errorHandler?.("");
+      }
       setPasswordValidation(runValidation(next));
     },
-    [setValueInParent, errorHandler, setPasswordValidation]
+    [setValueInParent, errorHandler, setPasswordValidation, hasInteracted, syncInlineError]
   );
+
+  const handleFocus = useCallback(() => {
+    setIsFocused(true);
+    setHasInteracted(true);
+    // Показать ошибку сразу после клика, пока пароль невалиден
+    syncInlineError(value ?? "");
+  }, [syncInlineError, value]);
+
+  const handleBlur = useCallback(() => {
+    setIsFocused(false);
+    // При уходе с поля оставляем ошибку, пока пароль невалиден
+    if (hasInteracted && !isPasswordValid) {
+      syncInlineError(value ?? "");
+    }
+  }, [hasInteracted, isPasswordValid, syncInlineError, value]);
 
   const handleCapsLock = useCallback((e: React.KeyboardEvent) => {
     setIsCapsLockOn(Boolean(e.getModifierState?.("CapsLock")));
@@ -161,6 +227,30 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
       ) || 0;
     const offsetY = bodyTop < 0 ? Math.abs(bodyTop) : 0;
     const nudgeY = offsetY > 0 ? 10 : 0;
+
+    const isMobilePopupTopPlacement =
+      typeof window !== "undefined" &&
+      window.innerWidth <= MOBILE_POPUP_BREAKPOINT;
+
+    if (isMobilePopupTopPlacement) {
+      const viewportPadding = 10;
+      const left = Math.max(
+        viewportPadding,
+        Math.min(rect.left, window.innerWidth - POPUP_WIDTH - viewportPadding)
+      );
+      setPopupPosition({
+        left,
+        // Якорим к уровню псевдоэлемента лейбла (::before)
+        top:
+          rect.top +
+          PASSWORD_LABEL_IDLE_TOP_PX +
+          offsetY +
+          nudgeY +
+          popupVerticalNudge,
+      });
+      return;
+    }
+
     setPopupPosition({
       left: rect.left - POPUP_WIDTH - POPUP_GAP,
       top: rect.top + rect.height / 2 + offsetY + nudgeY + popupVerticalNudge,
@@ -274,8 +364,8 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
             required={isRequired}
             value={value}
             onChange={handleChange}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
             onKeyDown={handleCapsLock}
             onKeyUp={handleCapsLock}
             isError={hasError}

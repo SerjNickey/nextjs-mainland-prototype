@@ -1,53 +1,27 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
+import type { HomePageBannerData } from "../BannerSliderMobile/bannerData";
+import { getBannerSlides } from "../BannerSliderMobile/bannerData";
 import * as S from "./BannerSlider.styled";
 
-type BannerSlide = {
-  title: string;
-  subtitle: string;
-  imageUrl?: string;
-};
-
-type HomePageData = {
-  banner_slider?: Array<{
-    value?: {
-      title?: string;
-      subtitle?: string;
-      image?: {
-        file?: string;
-      };
-    };
-  }>;
-} | null;
-
-const getSlides = (data: HomePageData): BannerSlide[] => {
-  const banners = data?.banner_slider ?? [];
-  if (Array.isArray(banners) && banners.length > 0) {
-    return banners.map((banner, index) => ({
-      title:
-        typeof banner.value?.title === "string" && banner.value.title.trim()
-          ? banner.value.title
-          : `Banner ${index + 1}`,
-      subtitle:
-        typeof banner.value?.subtitle === "string" ? banner.value.subtitle : "",
-      imageUrl:
-        typeof banner.value?.image?.file === "string"
-          ? banner.value.image.file
-          : undefined,
-    }));
-  }
-
-  return [];
-};
-
 interface BannerSliderProps {
-  data?: HomePageData;
+  data?: HomePageBannerData;
+  countryCode?: string;
+  countryName?: string;
   dotsActive?: boolean;
 }
 
-const BannerSlider = ({ data, dotsActive = true }: BannerSliderProps) => {
-  const slides = useMemo(() => getSlides(data ?? null), [data]);
+const BannerSlider = ({
+  data,
+  countryCode = "",
+  countryName = "",
+  dotsActive = true,
+}: BannerSliderProps) => {
+  const slides = useMemo(
+    () => getBannerSlides(data ?? null, countryCode, countryName),
+    [data, countryCode, countryName]
+  );
   const shouldLoop = slides.length > 1;
   const [emblaRef, emblaApi] = useEmblaCarousel(
     { loop: shouldLoop, align: "start" },

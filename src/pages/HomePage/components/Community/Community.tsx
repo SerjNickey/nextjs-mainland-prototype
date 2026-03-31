@@ -1,14 +1,13 @@
 /**
  * Community — блок списка соцсетей бренда (переход по ссылке в новой вкладке).
  * Данные из homePageApi: communities_title, communities_subtitle, communities.
- * Показываются только Facebook, YouTube, Twitch, X.com, Instagram (в таком порядке).
+ * Порядок и состав — как в API после фильтра по active и excluded_countries.
  */
 import { useMemo } from "react";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../../../store";
 import {
   getItemsFromData,
-  type CommunityItem,
   type HomePageCommunityData,
 } from "../../../../shared/communitiesData";
 import * as S from "./Community.styled";
@@ -20,45 +19,22 @@ export type {
 } from "../../../../shared/communitiesData";
 export { getItemsFromData } from "../../../../shared/communitiesData";
 
-/** Порядок и допустимые названия соцсетей в блоке Community. */
-const COMMUNITY_BLOCK_ORDER: Array<{ key: string; names: string[] }> = [
-  { key: "facebook", names: ["facebook"] },
-  { key: "youtube", names: ["youtube", "ютуб", "you tube"] },
-  { key: "twitch", names: ["twitch"] },
-  { key: "x", names: ["x", "x.com", "twitter"] },
-  { key: "instagram", names: ["instagram", "inst"] },
-];
-
-function filterAndOrderCommunityItems(items: CommunityItem[]): CommunityItem[] {
-  const norm = (s: string) => s.toLowerCase().trim().replace(/\./g, "");
-  const result: CommunityItem[] = [];
-  const used = new Set<string>();
-  for (const { names } of COMMUNITY_BLOCK_ORDER) {
-    const normNames = names.map((n) => n.replace(/\./g, ""));
-    const found = items.find(
-      (item) =>
-        !used.has(item.id) && normNames.some((n) => norm(item.name) === n)
-    );
-    if (found) {
-      result.push(found);
-      used.add(found.id);
-    }
-  }
-  return result;
-}
-
 interface CommunityProps {
   /** Данные из useGetHomePageQuery(); при отсутствии блок не рендерится */
   data?: HomePageCommunityData;
+  /** Как в GrandMenu: страна из base page, иначе из Redux ниже */
+  userCountry?: { code?: string; name?: string };
 }
 
-const Community = ({ data }: CommunityProps) => {
-  const countryCode = useSelector(
+const Community = ({ data, userCountry }: CommunityProps) => {
+  const countryCodeReg = useSelector(
     (s: RootState) => s.registration?.countryCodeReg ?? ""
   );
-  const countryName = useSelector(
+  const countryNameReg = useSelector(
     (s: RootState) => s.registration?.countryReg ?? ""
   );
+  const countryCode = userCountry?.code ?? countryCodeReg;
+  const countryName = userCountry?.name ?? countryNameReg;
 
   const title = useMemo(
     () =>
@@ -78,8 +54,7 @@ const Community = ({ data }: CommunityProps) => {
   );
   const items = useMemo(() => {
     if (!data) return [];
-    const all = getItemsFromData(data, countryCode, countryName);
-    return filterAndOrderCommunityItems(all);
+    return getItemsFromData(data, countryCode, countryName);
   }, [data, countryCode, countryName]);
 
   if (data?.communities_active === false) return null;

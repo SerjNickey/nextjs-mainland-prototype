@@ -9,6 +9,10 @@ import activeBack from "../../../../assets/icons/Community/active.webp";
 
 export const GrandWrapper = styled.section`
   margin-bottom: 100px;
+
+  ${media.max540} {
+    margin-bottom: 30px;
+  }
 `;
 /** Контейнер блока: 245×1440 px по ТЗ, центрирование по горизонтали */
 export const Wrapper = styled.div`
@@ -25,8 +29,12 @@ export const Wrapper = styled.div`
   gap: 12px;
 
   ${media.max768} {
-    padding: 24px 16px 32px;
+    padding: 24px 15px 32px;
     min-height: auto;
+  }
+  ${media.max540} {
+    margin: 0 auto;
+    padding: 0 0 20px 0;
   }
 `;
 
@@ -42,6 +50,11 @@ export const Title = styled.h2`
   text-transform: uppercase;
 
   color: #ffffff;
+
+  ${media.max540} {
+    font-size: 24px;
+    line-height: 29px;
+  }
 `;
 
 /** Подзаголовок (Subtitle): 32 px по ТЗ, regular, визуально меньше заголовка */
@@ -56,23 +69,24 @@ export const Subtitle = styled.p`
   text-align: center;
   margin: 0;
 
-  ${media.max600} {
-    font-size: 16px;
+  ${media.max540} {
+    font-size: 14px;
+    line-height: 120%;
+    text-align: center;
+    color: #848484;
   }
 `;
 
-/** Горизонтальный ряд карточек соцсетей на всю ширину Wrapper */
+/** Горизонтальный ряд карточек: группа по центру строки */
 export const CardRow = styled.div`
   display: flex;
   width: 100%;
+  justify-content: center;
   align-items: stretch;
+  flex-wrap: wrap;
   gap: 16px;
   margin-top: 8px;
   box-sizing: border-box;
-
-  ${media.max600} {
-    flex-wrap: wrap;
-  }
 `;
 
 const redIconFilter =
@@ -90,17 +104,22 @@ export const CardIcon = styled.img`
 
 export const Card = styled.a`
   position: relative;
+  width: auto;
   height: 59px;
   display: flex;
+  /* 1 1 0: делим строку поровну — иначе при basis 272px шесть кнопок
+     (6×272 + 5×gap) не влезают в ~1392px контейнера и уходят на второй ряд */
   flex: 1 1 0;
+  max-width: 272px;
   min-width: 0;
+  box-sizing: border-box;
   flex-direction: row;
   align-items: center;
   justify-content: flex-start;
   gap: 12px;
   padding: 0 18px;
-  background: url(${defaultBack});
-  background-size: contain;
+  background-image: url(${defaultBack});
+  background-size: 100% 100%;
   background-repeat: no-repeat;
   border-radius: 8px;
   text-decoration: none;
@@ -109,12 +128,25 @@ export const Card = styled.a`
   transition: background 0.2s ease;
 
   &:hover {
-    background: url(${activeBack});
-    background-size: contain;
+    background-image: url(${activeBack});
+    background-size: 100% 100%;
     background-repeat: no-repeat;
 
     & ${CardIcon} {
       filter: ${redIconFilter};
+    }
+  }
+
+  ${media.max540} {
+    width: 54px;
+    height: 54px;
+    flex: none;
+    justify-content: center;
+    background-color: #242424;
+    background-image: none;
+
+    &:hover {
+      background-image: none;
     }
   }
 `;
@@ -126,4 +158,12 @@ export const CardName = styled.span`
   font-weight: 600;
   font-size: 22px;
   color: #ffffff;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  ${media.max540} {
+    display: none;
+  }
 `;

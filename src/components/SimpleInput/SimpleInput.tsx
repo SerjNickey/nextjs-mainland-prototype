@@ -17,6 +17,8 @@ import {
   StyledInput,
   StyledError,
 } from "./SimpleInput.styled";
+import { isUsernameFormatValid } from "./usernameValidation";
+import { isEmailFormatValid } from "./emailValidation";
 
 // -----------------------------------------------------------------------------
 // Constants
@@ -24,6 +26,9 @@ import {
 
 const POPUP_DEFAULT_WIDTH = 250;
 const POPUP_GAP = 12;
+const MOBILE_USERNAME_BREAKPOINT = 540;
+const SIMPLE_INPUT_HEIGHT_PX = 44;
+const SIMPLE_INPUT_LABEL_IDLE_TOP_PX = SIMPLE_INPUT_HEIGHT_PX / 2;
 
 // -----------------------------------------------------------------------------
 // Types
@@ -44,6 +49,22 @@ interface SimpleInputProps {
   popupWidth?: number;
   popupMaxWidth?: number;
   popupInPortal?: boolean;
+  /**
+   * Поле — Username: включает только для него правила (blur/ввод, `usernameRequiredError` / `usernameInvalidError`, зелёный успех).
+   * Для остальных инпутов не передавать.
+   */
+  isUsername?: boolean;
+  /** Сообщения ошибок username — учитываются только при `isUsername` */
+  usernameRequiredError?: string;
+  usernameInvalidError?: string;
+  /**
+   * Поле — email: те же правила, что у username (blur/ввод, сообщения, зелёный успех).
+   * Не комбинировать с `isUsername` на одном инпуте.
+   */
+  isEmail?: boolean;
+  /** Сообщения ошибок email — учитываются только при `isEmail` */
+  emailRequiredError?: string;
+  emailInvalidError?: string;
 }
 
 // -----------------------------------------------------------------------------
@@ -64,36 +85,149 @@ const SimpleInput: React.FC<SimpleInputProps> = ({
   popupWidth,
   popupMaxWidth,
   popupInPortal = false,
+  isUsername = false,
+  usernameRequiredError = "",
+  usernameInvalidError = "",
+  isEmail = false,
+  emailRequiredError = "",
+  emailInvalidError = "",
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ left: 0, top: 0 });
   const [portalPositionReady, setPortalPositionReady] = useState(false);
+  const [usernameFieldActivated, setUsernameFieldActivated] = useState(false);
+  const [emailFieldActivated, setEmailFieldActivated] = useState(false);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const hasValue = value.length > 0;
   const hasError = errorEnabled && (errorText ?? "") !== "";
+  const usernameRulesOk =
+    isUsername && hasValue && isUsernameFormatValid(value);
+  const emailRulesOk = isEmail && hasValue && isEmailFormatValid(value);
+  const showValidHighlight =
+    errorEnabled &&
+    !hasError &&
+    ((isUsername && usernameRulesOk) || (isEmail && emailRulesOk));
   const showPopup = Boolean(popupContent && isFocused);
   const popupWForPosition = popupMaxWidth ?? popupWidth ?? popupMinWidth;
 
   const handleValue = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      setValueInParent(e.target.value);
-      errorHandler?.("");
+      const next = e.target.value;
+      setValueInParent(next);
+      if (
+        isUsername &&
+        errorHandler &&
+        usernameRequiredError &&
+        usernameInvalidError
+      ) {
+        if (next.length === 0) {
+          errorHandler("");
+        } else if (!isUsernameFormatValid(next)) {
+          errorHandler(usernameInvalidError);
+        } else {
+          errorHandler("");
+        }
+      } else if (
+        isEmail &&
+        errorHandler &&
+        emailRequiredError &&
+        emailInvalidError
+      ) {
+        if (next.length === 0) {
+          errorHandler("");
+        } else if (!isEmailFormatValid(next)) {
+          errorHandler(emailInvalidError);
+        } else {
+          errorHandler("");
+        }
+      } else {
+        errorHandler?.("");
+      }
     },
-    [setValueInParent, errorHandler]
+    [
+      setValueInParent,
+      errorHandler,
+      isUsername,
+      usernameRequiredError,
+      usernameInvalidError,
+      isEmail,
+      emailRequiredError,
+      emailInvalidError,
+    ]
   );
+
+  const handleFocus = useCallback(() => {
+    setIsFocused(true);
+    if (isUsername) {
+      setUsernameFieldActivated(true);
+    }
+    if (isEmail) {
+      setEmailFieldActivated(true);
+    }
+  }, [isUsername, isEmail]);
+
+  const handleBlur = useCallback(() => {
+    setIsFocused(false);
+    if (
+      isUsername &&
+      errorHandler &&
+      usernameRequiredError &&
+      usernameFieldActivated &&
+      value.length === 0
+    ) {
+      errorHandler(usernameRequiredError);
+    }
+    if (
+      isEmail &&
+      errorHandler &&
+      emailRequiredError &&
+      emailFieldActivated &&
+      value.length === 0
+    ) {
+      errorHandler(emailRequiredError);
+    }
+  }, [
+    isUsername,
+    isEmail,
+    errorHandler,
+    usernameRequiredError,
+    emailRequiredError,
+    usernameFieldActivated,
+    emailFieldActivated,
+    value,
+  ]);
 
   const updatePopupPosition = useCallback(() => {
     const el = inputRef.current ?? wrapperRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
+    const isMobileUsernamePopup =
+      isUsername &&
+      typeof window !== "undefined" &&
+      window.innerWidth <= MOBILE_USERNAME_BREAKPOINT;
+
+    if (isMobileUsernamePopup) {
+      const viewportPadding = 10;
+      const left = Math.max(
+        viewportPadding,
+        Math.min(rect.left, window.innerWidth - popupWForPosition - viewportPadding)
+      );
+      setPopupPosition({
+        left,
+        // Якорим попап к уровню псевдоэлемента лейбла (::before).
+        top: rect.top + SIMPLE_INPUT_LABEL_IDLE_TOP_PX,
+      });
+      return;
+    }
+
     setPopupPosition({
       left: rect.left - popupWForPosition - POPUP_GAP,
       top: rect.top + rect.height / 2,
     });
-  }, [popupWForPosition]);
+  }, [popupWForPosition, isUsername]);
 
   useLayoutEffect(() => {
     if (!popupInPortal || !showPopup) {
@@ -152,6 +286,7 @@ const SimpleInput: React.FC<SimpleInputProps> = ({
     value,
     onChange: handleValue,
     isError: hasError,
+    isValid: showValidHighlight,
   };
 
   const renderPopup = () => {
@@ -164,6 +299,7 @@ const SimpleInput: React.FC<SimpleInputProps> = ({
           $minWidth={popupMinWidth}
           $width={popupWidth}
           $maxWidth={popupMaxWidth}
+          $topPlacementMobile={isUsername}
         >
           {popupContent}
         </SimpleInputPopupPortal>
@@ -175,6 +311,7 @@ const SimpleInput: React.FC<SimpleInputProps> = ({
           $minWidth={popupMinWidth}
           $width={popupWidth}
           $maxWidth={popupMaxWidth}
+          $topPlacementMobile={isUsername}
         >
           {popupContent}
         </SimpleInputPopup>
@@ -188,8 +325,8 @@ const SimpleInput: React.FC<SimpleInputProps> = ({
       <StyledInput
         ref={inputRef}
         {...inputProps}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
       />
       {hasError && <StyledError>{errorText}</StyledError>}
     </>
@@ -202,6 +339,7 @@ const SimpleInput: React.FC<SimpleInputProps> = ({
         <SimpleInputContainer
           data-placeholder={placeholderText}
           data-error={hasError}
+          data-valid={showValidHighlight}
           data-filled={hasValue}
         >
           {!popupInPortal && renderPopup()}
@@ -215,9 +353,15 @@ const SimpleInput: React.FC<SimpleInputProps> = ({
     <SimpleInputContainer
       data-placeholder={placeholderText}
       data-error={hasError}
+      data-valid={showValidHighlight}
       data-filled={hasValue}
     >
-      <StyledInput {...inputProps} />
+      <StyledInput
+        ref={inputRef}
+        {...inputProps}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+      />
       {hasError && <StyledError>{errorText}</StyledError>}
     </SimpleInputContainer>
   );

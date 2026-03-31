@@ -19,6 +19,10 @@ interface StyledInputProps {
 // -----------------------------------------------------------------------------
 
 const INPUT_BG = "rgba(24, 24, 24, 1)";
+const POPUP_GAP = 12;
+const PASSWORD_INPUT_HEIGHT_PX = 44;
+const PASSWORD_LABEL_IDLE_TOP_PX = PASSWORD_INPUT_HEIGHT_PX / 2;
+const POPUP_PASSWORD_MOBILE_EXTRA_LIFT = 28;
 const BORDER = {
   default: "#5b5b5b",
   error: "#d70022",
@@ -29,10 +33,10 @@ const FLOAT_PLACEHOLDER_TRANSITION =
   "top 0.25s ease, transform 0.25s ease, font-size 0.25s ease, line-height 0.25s ease, color 0.25s ease";
 
 const getInputAccent = (p: StyledInputProps) =>
-  p.isValid
-    ? BORDER.valid
-    : p.isError
-      ? BORDER.error
+  p.isError
+    ? BORDER.error
+    : p.isValid
+      ? BORDER.valid
       : p.isCapsLockOn
         ? BORDER.caps
         : BORDER.default;
@@ -119,6 +123,10 @@ export const PasswordInputContainer = styled.div`
   position: relative;
   width: auto;
   height: auto;
+
+  ${media.max540} {
+    width: 100%;
+  }
 `;
 
 export const InputColumn = styled.div`
@@ -131,6 +139,10 @@ export const InputWrapper = styled.div`
   position: relative;
   display: flex;
   align-items: center;
+
+  ${media.max540} {
+    width: 100%;
+  }
 
   &::before {
     content: attr(data-placeholder);
@@ -183,14 +195,30 @@ export const StyledInput = styled.input<StyledInputProps>`
   position: relative;
 
   ${inputWidthMedia}
+
+  ${media.max540} {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
   ${placeholderHidden}
 `;
 
 export const StyledError = styled.p`
-  font-size: 12px;
+  font-size: 10px;
   color: ${BORDER.error};
   margin-top: 4px;
   text-transform: none;
+
+  ${media.max384} {
+    font-size: 10px;
+  }
+  ${media.max353} {
+    font-size: 9px;
+  }
+  ${media.max320} {
+    font-size: 8px;
+  }
 `;
 
 export const ToggleButton = styled.button`
@@ -290,6 +318,24 @@ export const ValidationPopup = styled.div`
   margin-right: 12px;
   animation: ${popupFadeIn} 0.22s ease-out forwards;
   ${popupBase}
+
+  ${media.max540} {
+    left: 0;
+    right: auto;
+    top: ${PASSWORD_LABEL_IDLE_TOP_PX}px;
+    margin-right: 0;
+    animation: none;
+    transform: translateY(
+      calc(-100% - ${POPUP_GAP + POPUP_PASSWORD_MOBILE_EXTRA_LIFT}px)
+    );
+    &::after {
+      top: auto;
+      right: auto;
+      bottom: -4px;
+      left: 16px;
+      transform: rotate(45deg);
+    }
+  }
 `;
 
 export const ValidationPopupPortal = styled.div<{
@@ -300,9 +346,23 @@ export const ValidationPopupPortal = styled.div<{
   left: ${({ $left }) => $left}px;
   top: ${({ $top }) => $top}px;
   transform: translateY(-50%);
-  z-index: 1001;
+  z-index: 1401;
   animation: ${popupFadeIn} 0.22s ease-out forwards;
   ${popupBase}
+
+  ${media.max540} {
+    animation: none;
+    transform: translateY(
+      calc(-100% - ${POPUP_GAP + POPUP_PASSWORD_MOBILE_EXTRA_LIFT}px)
+    );
+    &::after {
+      top: auto;
+      right: auto;
+      bottom: -4px;
+      left: 16px;
+      transform: rotate(45deg);
+    }
+  }
 `;
 
 export const ValidationPopupContent = styled.div`
