@@ -25,7 +25,7 @@ export const BackButton = styled.button`
   width: 44px;
   height: 44px;
   margin-left: 20px;
-  background: url(${backIcon});
+  background: url(${backIcon.src});
   background-size: contain;
   background-repeat: no-repeat;
   border: none;

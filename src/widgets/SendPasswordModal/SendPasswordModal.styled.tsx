@@ -64,7 +64,7 @@ export const CloseButton = styled.button`
   height: 44px;
   margin-top: 10px;
   margin-right: -20px;
-  background: url(${closeIcon});
+  background: url(${closeIcon.src});
   background-size: contain;
   background-repeat: no-repeat;
   border: none;
@@ -82,7 +82,7 @@ export const DifButton = styled.button<{ currentPage?: string }>`
   margin-top: 10px;
   margin-left: -20px;
   background: url(${({ currentPage }) =>
-    currentPage === "First" ? langIcon : backIcon});
+    currentPage === "First" ? langIcon.src : backIcon.src});
   background-size: contain;
   background-repeat: no-repeat;
   border: none;

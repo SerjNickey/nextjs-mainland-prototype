@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * Баннер Cookies по ТЗ:
  * - Функциональные cookies после согласия: согласие, язык, IP (IP определяется через api.ipify.org и записывается в cookie).
@@ -6,7 +8,7 @@
  */
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { useLocation } from "react-router-dom";
+import { usePathname } from "next/navigation";
 import type { RootState } from "../../store";
 import { usePageReady } from "../../contexts/PageReadyContext";
 import { useGetBasePageQuery } from "../../store/basePageApi";
@@ -21,7 +23,7 @@ import * as S from "./CookieBanner.styled";
 const COOKIE_BANNER_DELAY_MS = 500;
 
 const CookieBanner = () => {
-  const { pathname } = useLocation();
+  const pathname = usePathname();
   const isPageReady = usePageReady();
   const yourLang = useSelector(
     (s: RootState) => s.registration?.yourLang ?? "en"

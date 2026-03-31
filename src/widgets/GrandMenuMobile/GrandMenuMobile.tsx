@@ -3,7 +3,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
-import { useLocation, useNavigate } from "react-router-dom";
+import { usePathname, useRouter } from "next/navigation";
 import type { RootState } from "../../store";
 import { useGetBasePageQuery } from "../../store/basePageApi";
 import type { BaseMenuItem } from "../../shared/mainMenu/types";
@@ -33,8 +33,8 @@ type GrandMenuMobileProps = {
 };
 
 const GrandMenuMobile = ({ hidden = false }: GrandMenuMobileProps) => {
-  const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const router = useRouter();
+  const pathname = usePathname();
   const wrapperRef = useRef<HTMLElement>(null);
   useVisualViewportBottomGap(wrapperRef);
   /** iOS: без псевдоэлемента ::before у Wrapper; тестовый оранжевый фон у DownloadWrap. */
@@ -90,7 +90,7 @@ const GrandMenuMobile = ({ hidden = false }: GrandMenuMobileProps) => {
     if (!href) return;
     setIsOpen(false);
     if (isInternalAppLink(href)) {
-      navigate(urlToInternalPath(href));
+      router.push(urlToInternalPath(href));
       return;
     }
     window.open(href, "_self");

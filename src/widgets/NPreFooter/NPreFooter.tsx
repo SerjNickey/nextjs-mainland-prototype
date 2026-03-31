@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import Marquee from "react-fast-marquee";
 import { useSelector } from "react-redux";
 import { useGetBasePageQuery } from "../../store/basePageApi";
@@ -238,7 +239,7 @@ const PreFooter = () => {
   const countryNameReg = useSelector(
     (state: RootState) => state.registration?.countryReg ?? ""
   );
-  const { pathname } = useLocation();
+  const pathname = usePathname();
   const { data } = useGetBasePageQuery(yourLang);
 
   /** Как в GrandMenu: страна из base, иначе из регистрации */
@@ -287,7 +288,7 @@ const PreFooter = () => {
 
   /** В dev: полный срез полей футера в консоль — можно скопировать JSON и прислать как пример */
   useEffect(() => {
-    if (!import.meta.env.DEV || !data) return;
+    if (process.env.NODE_ENV !== "development" || !data) return;
     const d = data as Record<string, unknown>;
     const sample = {
       footer_social_media_title: d.footer_social_media_title,
@@ -612,7 +613,7 @@ const PreFooter = () => {
                               {internal ? (
                                 <S.NavLink
                                   as={Link}
-                                  to={to}
+                                  href={to}
                                   onClick={() => {
                                     if (pathname === to) window.scrollTo(0, 0);
                                   }}

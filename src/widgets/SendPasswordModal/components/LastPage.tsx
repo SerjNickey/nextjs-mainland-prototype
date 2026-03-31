@@ -26,7 +26,7 @@ const LastPage = () => {
         <span style={{ fontSize: 18, fontWeight: 700 }}>Poker Planets</span>
       )}
       <SuccessFirst>
-        <img src={doneLogo} width={50} height={50} />
+        <img src={doneLogo.src} width={50} height={50} alt="" />
         <SuccessTitle>Письмо отправлено!</SuccessTitle>
         <SuccessText>
           На указанную электронную почту отправлена ссылка для сброса пароля.
@@ -39,8 +39,8 @@ const LastPage = () => {
       </SuccessBanner> */}
 
       <DownloadAppText>
-        Вы можете скачать приложение уже сейчас. Нажмите кнопку ниже "Скачать
-        приложение".
+        Вы можете скачать приложение уже сейчас. Нажмите кнопку ниже «Скачать
+        приложение».
       </DownloadAppText>
 
       <GetAppButtonNew

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { useLocation, useNavigate } from "react-router-dom";
+import { usePathname, useRouter } from "next/navigation";
 import { useGetBasePageQuery } from "../../store/basePageApi";
 import type { RootState } from "../../store";
 import type { BaseMenuItem, MainMenuTab } from "./types";
@@ -24,8 +24,8 @@ export interface GrandMenuProps {
 }
 
 const GrandMenu = ({ showPreview = false }: GrandMenuProps) => {
-  const { pathname } = useLocation();
-  const navigate = useNavigate();
+  const pathname = usePathname();
+  const router = useRouter();
   const yourLang = useSelector(
     (s: RootState) => s.registration?.yourLang ?? "en"
   );
@@ -90,13 +90,13 @@ const GrandMenu = ({ showPreview = false }: GrandMenuProps) => {
   }, [pathname]);
 
   useEffect(() => {
-    const t = setTimeout(preloadAllRoutes, 2000);
+    const t = setTimeout(() => preloadAllRoutes(router), 2000);
     return () => clearTimeout(t);
-  }, []);
+  }, [router]);
 
   const handleNavigate = (to: string) => {
     setNavigatingTo(to);
-    navigate(to);
+    router.push(to);
   };
 
   return (

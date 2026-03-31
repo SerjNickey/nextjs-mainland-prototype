@@ -43,7 +43,7 @@ export const StyledCheckbox = styled.input<IStyledCheckbox>`
   transition: all 0.2s ease;
 
   &:checked {
-    background: url(${checkboxOn});
+    background: url(${checkboxOn.src});
     background-size: contain;
     background-repeat: no-repeat;
     border-color: transparent;

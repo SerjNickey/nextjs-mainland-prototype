@@ -19,7 +19,7 @@ type LanguageCode = "ru" | "en"; // Добавьте другие коды яз�
 interface Language {
   code: LanguageCode;
   name: string;
-  icon: any;
+  icon: string;
 }
 
 const LangSwitcher: React.FC = () => {
@@ -35,8 +35,8 @@ const LangSwitcher: React.FC = () => {
   const popupRef = useRef<HTMLDivElement>(null);
 
   const languages: Language[] = [
-    { code: "ru", name: "Russian", icon: RuIcon },
-    { code: "en", name: "English", icon: EnIcon },
+    { code: "ru", name: "Russian", icon: RuIcon.src },
+    { code: "en", name: "English", icon: EnIcon.src },
   ];
 
   // Закрытие попапа при клике вне компонента

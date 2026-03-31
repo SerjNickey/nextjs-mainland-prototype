@@ -64,9 +64,10 @@ function toCssSize(value: SizeValue | undefined): string | undefined {
 }
 
 function getDevProxyUrl(src: string): string | null {
-  if (!import.meta.env.DEV) return null;
+  if (process.env.NODE_ENV !== "development") return null;
 
-  const mediaOriginRaw = (import.meta.env.VITE_MEDIA_ORIGIN as string | undefined) ?? "";
+  const mediaOriginRaw =
+    (process.env.NEXT_PUBLIC_MEDIA_ORIGIN as string | undefined) ?? "";
   const mediaOrigin = mediaOriginRaw.replace(/\/$/, "");
 
   try {
@@ -82,7 +83,7 @@ function getDevProxyUrl(src: string): string | null {
 }
 
 function getDevSvgInlineProxyUrl(src: string): string | null {
-  if (!import.meta.env.DEV) return null;
+  if (process.env.NODE_ENV !== "development") return null;
   if (!src) return null;
   return `/api/svg-inline-proxy?url=${encodeURIComponent(src)}`;
 }

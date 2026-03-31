@@ -1,5 +1,6 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { preloadRoute } from "../../../../preloadRoutes";
 import type { MainMenuTab } from "../../types";
 import {
@@ -22,6 +23,7 @@ export function TabButton({
   navigatingTo,
   onNavigate,
 }: TabButtonProps) {
+  const router = useRouter();
   const href = tab.href ?? "#";
   const internal = isInternalAppLink(href);
   const to = internal ? urlToInternalPath(href) : href;
@@ -36,9 +38,9 @@ export function TabButton({
   return (
     <S.TabButton
       as={internal ? Link : "a"}
-      {...(internal ? { to, onClick: handleClick } : { href })}
-      onMouseEnter={() => internal && preloadRoute(to)}
-      onMouseDown={() => internal && preloadRoute(to)}
+      {...(internal ? { href: to, onClick: handleClick } : { href })}
+      onMouseEnter={() => internal && preloadRoute(router, to)}
+      onMouseDown={() => internal && preloadRoute(router, to)}
       $accent={tab.iconKey === "download_app"}
       $current={isCurrent}
       $navigating={internal && navigatingTo === to}
