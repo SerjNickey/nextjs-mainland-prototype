@@ -18,7 +18,7 @@ export const Overlay = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 1300;
   overflow: hidden;
 `;
 
@@ -28,7 +28,7 @@ export const ModalContainer = styled.div`
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
   width: auto;
   height: auto;
-  padding: 0 0 30px 0;
+  padding: 0 0 10px 0;
 `;
 
 // Заголовок модального окна
@@ -39,6 +39,11 @@ export const ModalHeader = styled.div<{ isVisible: boolean }>`
   justify-content: space-between;
   align-items: flex-start;
   color: #fff;
+
+  ${media.max540} {
+    height: auto;
+    align-items: center;
+  }
 `;
 export const ModalHeaderTitle = styled.div`
   font-size: 16px;
@@ -85,6 +90,10 @@ export const CloseButton = styled.button`
   border: none;
   cursor: pointer;
 
+  ${media.max540} {
+    margin-top: 0;
+  }
+
   ${media.max393} {
     width: 33px;
     height: 33px;
@@ -110,6 +119,10 @@ export const DifButton = styled.button<{
   border: none;
   cursor: pointer;
 
+  ${media.max540} {
+    margin-top: 0;
+  }
+
   ${media.max393} {
     width: 33px;
     height: 33px;
@@ -124,6 +137,13 @@ export const TitleContainer = styled.div`
   font-size: 20px;
   color: #ffffff;
   text-transform: none;
+
+  ${media.max540} {
+    padding-top: 0;
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
 
   ${media.max320} {
     font-size: 18px;
@@ -180,6 +200,9 @@ export const AnimatedModalContainer = styled(ModalContainer)`
   ${media.min1440} {
     zoom: 0.75; /* 1440×1080 */
   }
+  ${media.min1463} {
+    zoom: 0.762; /* 1463×823 */
+  }
   ${media.min1536} {
     zoom: 0.8; /* 1536×864/960, 1920×1080/1200 @ 125% */
   }
@@ -188,6 +211,9 @@ export const AnimatedModalContainer = styled(ModalContainer)`
   }
   ${media.min1680} {
     zoom: 0.875; /* 1680×1050 */
+  }
+  ${media.min1707} {
+    zoom: 0.889; /* 1707×960 */
   }
   ${media.min1720} {
     zoom: 0.896; /* 1720×720 */

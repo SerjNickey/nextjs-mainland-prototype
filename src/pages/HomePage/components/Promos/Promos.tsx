@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
+import { useSelector } from "react-redux";
 import { MEDIA_ORIGIN } from "../../../../config/env";
+import { useGetPromosPageQuery } from "../../../../store/promosPageApi";
+import type { RootState } from "../../../../store";
 import * as S from "./Promos.styled";
 
 const normalizeUrl = (rawUrl: string) => {
@@ -24,6 +27,16 @@ const getFileUrl = (source?: { file?: unknown }) => {
   const fileObject = source?.file as { url?: unknown } | undefined;
   if (typeof fileObject?.url === "string") return normalizeUrl(fileObject.url);
   return "";
+};
+
+const hasRichTextContent = (raw?: string) => {
+  if (typeof raw !== "string") return false;
+  const plainText = raw
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;|&#160;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return plainText.length > 0;
 };
 
 /** Контент модального окна при action.type === "popup". */
@@ -53,6 +66,7 @@ type Slide = {
 
 type HomePageData = {
   promos_title?: string;
+  terms_and_conditions_title?: string;
   promos?: Array<{
     id?: string;
     value?: {
@@ -65,14 +79,10 @@ type HomePageData = {
         value?: {
           extra_button_text?: string;
           link?: string;
-          title?: string;
-          subtitle?: string;
           note?: string;
           button_text?: string;
           button_link?: string;
-          image?: { file?: string };
           description?: string;
-          terms_and_conditions_title?: string;
           terms_and_conditions?: string;
         };
       }>;
@@ -80,7 +90,7 @@ type HomePageData = {
   }>;
 } | null;
 
-const getSlides = (data: HomePageData): Slide[] => {
+const getSlides = (data: HomePageData, globalTermsTitle?: string): Slide[] => {
   const promos = data?.promos ?? [];
   if (!Array.isArray(promos) || promos.length === 0) return [];
 
@@ -114,18 +124,23 @@ const getSlides = (data: HomePageData): Slide[] => {
         showButton = true;
       } else if (extra?.type === "popup" && extra.value) {
         const x = extra.value;
+        const termsBody =
+          typeof x.terms_and_conditions === "string"
+            ? x.terms_and_conditions
+            : undefined;
+        const hasTerms = hasRichTextContent(termsBody);
         action = {
           type: "popup",
           content: {
-            title: x.title,
-            subtitle: x.subtitle,
+            title,
+            subtitle: text,
             note: x.note,
             buttonText: x.button_text,
             buttonLink: x.button_link ? normalizeUrl(x.button_link) : undefined,
-            imageUrl: getFileUrl(x.image) || undefined,
+            imageUrl,
             description: x.description,
-            termsTitle: x.terms_and_conditions_title,
-            termsBody: x.terms_and_conditions,
+            termsTitle: hasTerms ? globalTermsTitle : undefined,
+            termsBody: hasTerms ? termsBody : undefined,
           },
         };
         showButton = true;
@@ -159,7 +174,24 @@ interface PromosProps {
 }
 
 const Promos = ({ data, dotsActive }: PromosProps) => {
-  const slides = useMemo(() => getSlides(data ?? null), [data]);
+  const yourLang = useSelector(
+    (state: RootState) => state.registration?.yourLang ?? "en"
+  );
+  const { data: promoPageData } = useGetPromosPageQuery(yourLang);
+  const termsTitle = useMemo(() => {
+    const fromHome =
+      typeof data?.terms_and_conditions_title === "string"
+        ? data.terms_and_conditions_title.trim()
+        : "";
+    if (fromHome) return fromHome;
+    const fromPromo =
+      typeof promoPageData?.terms_and_conditions_title === "string"
+        ? promoPageData.terms_and_conditions_title.trim()
+        : "";
+    return fromPromo || undefined;
+  }, [data?.terms_and_conditions_title, promoPageData?.terms_and_conditions_title]);
+
+  const slides = useMemo(() => getSlides(data ?? null, termsTitle), [data, termsTitle]);
   const title = useMemo(() => getTitle(data ?? null), [data]);
   const shouldLoop = slides.length > 1;
   const [modalContent, setModalContent] = useState<PopupContent | null>(null);
@@ -174,7 +206,7 @@ const Promos = ({ data, dotsActive }: PromosProps) => {
       }
     } else {
       setModalContent(slide.action.content);
-      setTermsOpen(false);
+      setTermsOpen(true);
     }
   }, []);
 
@@ -188,7 +220,20 @@ const Promos = ({ data, dotsActive }: PromosProps) => {
   // }, [data]);
 
   const [emblaRef, emblaApi] = useEmblaCarousel(
-    { loop: shouldLoop, align: slides.length < 3 ? "center" : "start" },
+    {
+      loop: shouldLoop,
+      align: slides.length < 3 ? "center" : "start",
+      /**
+       * На max540 и ниже — один слайд 343×158, без trimSnaps. containScroll: false как на max430.
+       */
+      containScroll: "trimSnaps",
+      breakpoints: {
+        "(max-width: 541px)": {
+          containScroll: false,
+          align: "center",
+        },
+      },
+    },
     [
       Autoplay({
         delay: 4000,
@@ -214,6 +259,13 @@ const Promos = ({ data, dotsActive }: PromosProps) => {
     emblaApi.reInit({
       loop: shouldLoop,
       align: slides.length < 3 ? "center" : "start",
+      containScroll: "trimSnaps",
+      breakpoints: {
+        "(max-width: 541px)": {
+          containScroll: false,
+          align: "center",
+        },
+      },
     });
     onSelect();
 
@@ -290,7 +342,9 @@ const Promos = ({ data, dotsActive }: PromosProps) => {
             <S.Slide key={slide.id}>
               <S.SlideContent $backgroundUrl={slide.imageUrl}>
                 <S.SlideTitle>{slide.title}</S.SlideTitle>
-                <S.SlideText>{slide.text}</S.SlideText>
+                <S.SlideTextWrap>
+                  <S.SlideText>{slide.text}</S.SlideText>
+                </S.SlideTextWrap>
                 {slide.showButton && (
                   <S.SlideButton
                     type="button"
@@ -385,7 +439,7 @@ const Promos = ({ data, dotsActive }: PromosProps) => {
                   }}
                 />
               )}
-              {(modalContent.termsTitle || modalContent.termsBody) && (
+              {hasRichTextContent(modalContent.termsBody) && (
                 <S.ToggleBlock>
                   <S.ToggleHeader
                     type="button"
@@ -394,7 +448,7 @@ const Promos = ({ data, dotsActive }: PromosProps) => {
                     aria-expanded={termsOpen}
                   >
                     <span>
-                      {modalContent.termsTitle ?? "Terms & Conditions"}
+                      {modalContent.termsTitle?.trim() || "Terms & Conditions"}
                     </span>
                     <svg
                       className="chevron"

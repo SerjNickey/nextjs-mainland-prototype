@@ -6,6 +6,13 @@ import { useGetBasePageQuery } from "../../store/basePageApi";
 import type { RootState } from "../../store";
 import { MEDIA_ORIGIN } from "../../config/env";
 import { isAppRoutePath } from "../../preloadRoutes";
+import InlineSvgFromUrl from "../../components/InlineSvgFromUrl/InlineSvgFromUrl";
+import {
+  cleanIncludedCountries,
+  cleanExcludedCountries,
+  isVisibleForCountry,
+  type ExcludedCountryEntry,
+} from "../../shared/countryVisibility";
 import * as S from "./NPreFooter.styled";
 
 /**
@@ -47,12 +54,33 @@ const getImageUrl = (obj: { file?: string } | undefined) => {
   return "";
 };
 
-/** В HTML из API подменяет относительные src у img на полный URL (MEDIA_ORIGIN), чтобы картинки отображались */
+const runtimeOrigin = () => {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin.replace(/\/$/, "");
+  }
+  return MEDIA_ORIGIN;
+};
+
+const normalizeDocImageUrl = (raw: string) => {
+  const t = raw?.trim() || "";
+  if (!t) return "";
+  if (t.startsWith("data:") || t.startsWith("blob:")) return t;
+  if (t.startsWith("http://") || t.startsWith("https://")) return t;
+  if (t.startsWith("//")) {
+    const protocol =
+      typeof window !== "undefined" ? window.location.protocol : "https:";
+    return `${protocol}${t}`;
+  }
+  const origin = runtimeOrigin();
+  return `${origin}${t.startsWith("/") ? t : `/${t}`}`;
+};
+
+/** В HTML из API подменяет относительные src у img на полный URL (текущий origin), чтобы картинки отображались */
 const normalizeHtmlImageUrls = (html: string): string => {
   if (!html) return html;
   return html.replace(
     /<img([^>]*)\ssrc="([^"]*)"/gi,
-    (_, attrs, src) => `<img${attrs} src="${normalizeUrl(src)}"`
+    (_, attrs, src) => `<img${attrs} src="${normalizeDocImageUrl(src)}"`
   );
 };
 
@@ -60,13 +88,13 @@ const normalizeHtmlImageUrls = (html: string): string => {
 type InformationTextBlock =
   | { type: "paragraph"; value: string; id?: string }
   | {
-      type: "table";
-      value: {
-        data?: unknown[][];
-        first_row_is_table_header?: boolean;
-      };
-      id?: string;
+    type: "table";
+    value: {
+      data?: unknown[][];
+      first_row_is_table_header?: boolean;
     };
+    id?: string;
+  };
 
 type InformationLineItem = {
   title?: string;
@@ -164,15 +192,6 @@ function extractDocHashFromHref(href: string): string | null {
   const trimmed = href.trim();
   if (!trimmed) return null;
   if (trimmed.startsWith("#")) return toHashValue(trimmed);
-  try {
-    const target = new URL(trimmed, window.location.href);
-    const current = new URL(window.location.href);
-    const samePage =
-      target.origin === current.origin && target.pathname === current.pathname;
-    if (samePage && target.hash) return toHashValue(target.hash);
-  } catch {
-    return null;
-  }
   return null;
 }
 
@@ -195,40 +214,40 @@ type LegalImageItem = {
   value: {
     image?: { file?: string };
     url?: string;
-    excluded_countries?: Array<{ code?: string; name?: string }>;
+    included_countries?: ExcludedCountryEntry[];
+    excluded_countries?: ExcludedCountryEntry[];
   };
   id: string;
 };
 
-/** Join Us: только эти соцсети в этом порядке */
-const JOIN_US_ORDER = ["Instagram", "Telegram", "Facebook", "X.com"];
-
-const isExcludedByCountry = (
-  excluded: Array<{ code?: string; name?: string }> | undefined,
-  countryCode: string,
-  countryName: string
-) => {
-  if (!excluded?.length) return false;
-  const code = countryCode.toLowerCase().trim();
-  const name = countryName.toLowerCase().trim();
-  return excluded.some(
-    (c) =>
-      c != null &&
-      (String(c.code || "").toLowerCase() === code ||
-        String(c.name || "").toLowerCase() === name)
-  );
+type FooterCommunityItem = {
+  name?: string;
+  icon?: { file?: string; color?: string };
+  link?: string;
+  color?: string;
+  included_countries?: ExcludedCountryEntry[];
+  excluded_countries?: ExcludedCountryEntry[];
+  active?: boolean;
 };
 
 const PreFooter = () => {
   const { yourLang } = useSelector((state: RootState) => state.registration);
-  const countryCode = useSelector(
+  const countryCodeReg = useSelector(
     (state: RootState) => state.registration?.countryCodeReg ?? ""
   );
-  const countryName = useSelector(
+  const countryNameReg = useSelector(
     (state: RootState) => state.registration?.countryReg ?? ""
   );
   const { pathname } = useLocation();
   const { data } = useGetBasePageQuery(yourLang);
+
+  /** Как в GrandMenu: страна из base, иначе из регистрации */
+  const countryCode =
+    (data as { user_country?: { code?: string } } | undefined)?.user_country
+      ?.code ?? countryCodeReg;
+  const countryName =
+    (data as { user_country?: { name?: string } } | undefined)?.user_country
+      ?.name ?? countryNameReg;
 
   /** Колонки — строго из data.footer_blocks (REST: массив { type, value: { title, lines: [{ title, url }] } }) */
   const footerBlocks: FooterBlockItem[] = Array.isArray(
@@ -243,26 +262,55 @@ const PreFooter = () => {
   const socialTitle = (data as { footer_social_media_title?: string })
     ?.footer_social_media_title;
   const communities =
-    (
-      data as {
-        communities?: Array<{
-          name?: string;
-          icon?: { file?: string };
-          link?: string;
-        }>;
+    (data as { communities?: FooterCommunityItem[] } | undefined)
+      ?.communities ?? [];
+
+  /** Как communityItems в GrandMenu (More): active, excluded_countries, name+link */
+  const visibleFooterCommunities = useMemo(() => {
+    return communities.filter((item) => {
+      if (item.active === false) return false;
+      if (
+        !isVisibleForCountry(
+          cleanIncludedCountries(item.included_countries),
+          cleanExcludedCountries(item.excluded_countries),
+          countryCode,
+          countryName
+        )
+      ) {
+        return false;
       }
-    )?.communities ?? [];
+      const name = item.name?.trim() ?? "";
+      const link = item.link?.trim() ?? "";
+      return name !== "" && link !== "";
+    });
+  }, [communities, countryCode, countryName]);
 
-  /** Join Us: только Instagram, Telegram, Facebook, X.com в этом порядке */
-  const footerSocialCommunities = useMemo(() => {
-    const orderLower = JOIN_US_ORDER.map((n) => n.toLowerCase());
-    return orderLower
-      .map((name) =>
-        communities.find((c) => (c.name ?? "").toLowerCase() === name)
-      )
-      .filter((item): item is NonNullable<typeof item> => item != null);
-  }, [communities]);
+  /** В dev: полный срез полей футера в консоль — можно скопировать JSON и прислать как пример */
+  useEffect(() => {
+    if (!import.meta.env.DEV || !data) return;
+    const d = data as Record<string, unknown>;
+    const sample = {
+      footer_social_media_title: d.footer_social_media_title,
+      communities: d.communities,
+      footer_contact_title: d.footer_contact_title,
+      footer_contact_link: d.footer_contact_link,
+      footer_blocks: d.footer_blocks,
+      footer_running_line: d.footer_running_line,
+      footer_legal_text: d.footer_legal_text,
+      footer_legal_images: d.footer_legal_images,
+    };
+    console.log("[NPreFooter] пример данных basePage (футер):", sample);
+    try {
+      console.log(
+        "[NPreFooter] JSON для копирования ↓\n" +
+          JSON.stringify(sample, null, 2)
+      );
+    } catch (e) {
+      console.warn("[NPreFooter] JSON.stringify не удался", e);
+    }
+  }, [data]);
 
+  /** Соцсети: порядок и состав как в ответе API (`communities`) */
   const runningLine =
     (data as { footer_running_line?: RunningLineItem[] })
       ?.footer_running_line ?? [];
@@ -302,8 +350,9 @@ const PreFooter = () => {
   const filteredLegalImages = legalImages
     .filter((item) => {
       if (item.type !== "legal_image") return false;
-      const excluded = item.value.excluded_countries;
-      return !isExcludedByCountry(excluded, countryCode, countryName);
+      const included = cleanIncludedCountries(item.value.included_countries);
+      const excluded = cleanExcludedCountries(item.value.excluded_countries);
+      return isVisibleForCountry(included, excluded, countryCode, countryName);
     })
     .slice(0, MAX_LEGAL_IMAGES);
 
@@ -403,11 +452,11 @@ const PreFooter = () => {
       prev.open && prev.slug === docByHash.slug
         ? prev
         : {
-            open: true,
-            title: docByHash.title,
-            html: docByHash.html,
-            slug: docByHash.slug,
-          }
+          open: true,
+          title: docByHash.title,
+          html: docByHash.html,
+          slug: docByHash.slug,
+        }
     );
   }, [docsBySlug, hashValue]);
 
@@ -620,23 +669,42 @@ const PreFooter = () => {
                 )}
               </S.ContactBlock>
             )}
-            {socialTitle && (
+            {socialTitle && visibleFooterCommunities.length > 0 && (
               <S.SocialBlock>
                 <S.SocialTitle>{socialTitle}</S.SocialTitle>
                 <S.SocialIcons>
-                  {footerSocialCommunities.map((item) => {
-                    const url = getImageUrl(item.icon);
+                  {visibleFooterCommunities.map((item, index) => {
+                    const iconUrl = getImageUrl(item.icon);
                     const link = item.link?.trim() || "#";
+                    const key = `${item.name ?? "social"}-${item.link ?? ""}-${index}`;
+                    const svgColor =
+                      item.icon?.color ?? item.color ?? undefined;
                     return (
                       <S.SocialIconLink
-                        key={item.name}
+                        key={key}
                         href={link}
                         target="_blank"
                         rel="noopener noreferrer"
                         title={item.name}
                       >
-                        {url ? (
-                          <img src={url} alt="" />
+                        {iconUrl ? (
+                          <InlineSvgFromUrl
+                            src={iconUrl}
+                            title={item.name}
+                            width={24}
+                            height={24}
+                            color={svgColor}
+                            forceColor={!!svgColor}
+                            fallback={
+                              <img
+                                src={iconUrl}
+                                alt=""
+                                width={24}
+                                height={24}
+                                loading="lazy"
+                              />
+                            }
+                          />
                         ) : (
                           <span>{item.name?.charAt(0) ?? ""}</span>
                         )}

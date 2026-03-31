@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../store";
 import {
@@ -23,6 +23,8 @@ import {
   useCheckVerificationCodeMutation,
 } from "../../store/registrationApi";
 import SimpleInput from "../../components/SimpleInput/SimpleInput";
+import { isUsernameFormatValid } from "../../components/SimpleInput/usernameValidation";
+import { isEmailFormatValid } from "../../components/SimpleInput/emailValidation";
 import {
   SimpleInputPopupRulesBlock,
   SimpleInputPopupWarningIcon,
@@ -76,6 +78,38 @@ const QRForm = () => {
   const [countryError, setCountryError] = useState("");
   const [agreementError, setAgreementError] = useState("");
   const [invitationCodeError, setInvitationCodeError] = useState("");
+
+  const usernameValidationCopy = useMemo(
+    () =>
+      lang === "ru"
+        ? {
+          /** Сообщение под полем: пусто при blur / невалид при вводе */
+          fieldMessage: "Обязательно для заполнения.",
+          /** Только текст в попапе с правилами */
+          popupHint:
+            "Имя пользователя должно содержать от 3 до 16 символов, включая только латинские буквы, цифры и специальные символы. Пробелы не допускаются.",
+        }
+        : {
+          fieldMessage: "This field is required.",
+          popupHint:
+            "Username must be 3 to 16 characters long and include only Latin letters, numbers, and special characters; spaces are not allowed.",
+        },
+    [lang]
+  );
+
+  const emailValidationCopy = useMemo(
+    () =>
+      lang === "ru"
+        ? {
+          required: "Обязательно для заполнения.",
+          invalid: "Введите корректный адрес электронной почты.",
+        }
+        : {
+          required: "This field is required.",
+          invalid: "Please enter a valid email address.",
+        },
+    [lang]
+  );
 
   // useEffect(() => {
   //   if (isLoadingFormToken) {
@@ -143,11 +177,19 @@ const QRForm = () => {
 
   const handleSubmit = async () => {
     if (!nicknameReg) {
-      setNicknameError("Please enter your nickname");
+      setNicknameError(usernameValidationCopy.fieldMessage);
+    } else if (!isUsernameFormatValid(nicknameReg)) {
+      setNicknameError(usernameValidationCopy.fieldMessage);
+    } else {
+      setNicknameError("");
     }
 
     if (!emailReg) {
-      setEmailError("Please enter your email.");
+      setEmailError(emailValidationCopy.required);
+    } else if (!isEmailFormatValid(emailReg)) {
+      setEmailError(emailValidationCopy.invalid);
+    } else {
+      setEmailError("");
     }
     if (!passwordReg) {
       setPasswordError("Please enter your password.");
@@ -167,7 +209,9 @@ const QRForm = () => {
 
     if (
       nicknameReg &&
+      isUsernameFormatValid(nicknameReg) &&
       emailReg &&
+      isEmailFormatValid(emailReg) &&
       countryReg &&
       countryCodeReg &&
       passwordReg &&
@@ -198,10 +242,9 @@ const QRForm = () => {
           )
         ) {
           setNicknameError(
-            `${
-              lang === "ru"
-                ? "Такой никнейм уже существует."
-                : "This nickname is already taken."
+            `${lang === "ru"
+              ? "Такой никнейм уже существует."
+              : "This nickname is already taken."
             }`
           );
         }
@@ -212,12 +255,19 @@ const QRForm = () => {
           )
         ) {
           setEmailError(
-            `${
-              lang === "ru"
-                ? "Электронная почта не может быть принята. Попробуйте другую."
-                : "Email can not be accepted. Please try another one."
+            `${lang === "ru"
+              ? "Электронная почта не может быть принята. Попробуйте другую."
+              : "Email can not be accepted. Please try another one."
             }`
           );
+        }
+        if (
+          hasErrorByDetail(
+            err && err.data && err.data.errors,
+            "E-mail address is not valid."
+          )
+        ) {
+          setEmailError(emailValidationCopy.invalid);
         }
         if (
           hasErrorByDetail(
@@ -291,15 +341,16 @@ const QRForm = () => {
                     ⚠
                   </SimpleInputPopupWarningIcon>
                   <SimpleInputPopupRulesText>
-                    {lang === "ru"
-                      ? "Имя пользователя должно содержать от 3 до 16 символов, включая только латинские буквы, цифры и специальные символы. Пробелы не допускаются."
-                      : "Username must be 3 to 16 characters long and include only Latin letters, numbers, and special characters; spaces are not allowed."}
+                    {usernameValidationCopy.popupHint}
                   </SimpleInputPopupRulesText>
                 </SimpleInputPopupRulesBlock>
               }
               popupMinWidth={220}
               popupMaxWidth={256}
               popupInPortal={true}
+              isUsername
+              usernameRequiredError={usernameValidationCopy.fieldMessage}
+              usernameInvalidError={usernameValidationCopy.fieldMessage}
             />
             <SimpleInput
               value={emailReg}
@@ -309,6 +360,9 @@ const QRForm = () => {
               errorEnabled={true}
               errorText={emailError}
               errorHandler={setEmailError}
+              isEmail
+              emailRequiredError={emailValidationCopy.required}
+              emailInvalidError={emailValidationCopy.invalid}
             />
           </NicknameEmailRow>
           <PasswordInput
@@ -418,8 +472,10 @@ const QRForm = () => {
             <SimpleButton
               isDisabled={
                 !nicknameReg ||
+                !isUsernameFormatValid(nicknameReg) ||
                 nicknameError !== "" ||
                 !emailReg ||
+                !isEmailFormatValid(emailReg) ||
                 emailError !== "" ||
                 !countryReg ||
                 !countryCodeReg ||

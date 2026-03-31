@@ -47,6 +47,9 @@ export const PageLayout = styled.div`
   ${media.min1440} {
     zoom: 0.75; /* 1440×1080 */
   }
+  ${media.min1463} {
+    zoom: 0.762; /* 1463×823 */
+  }
   ${media.min1536} {
     zoom: 0.8; /* 1536×864/960, 1920×1080/1200 @ 125% */
   }
@@ -55,6 +58,9 @@ export const PageLayout = styled.div`
   }
   ${media.min1680} {
     zoom: 0.875; /* 1680×1050 */
+  }
+  ${media.min1707} {
+    zoom: 0.889; /* 1707×960 */
   }
   ${media.min1720} {
     zoom: 0.896; /* 1720×720, 3440×1440 @ 200% */

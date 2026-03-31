@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import type { MainMenuResponse } from "../widgets/GrandMenu/types";
+import type { MainMenuResponse } from "../shared/mainMenu/types";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: "/api/v2",

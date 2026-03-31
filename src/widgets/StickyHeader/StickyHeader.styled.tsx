@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { media } from "../../styles/breakpoints";
 
 /** Высота только Header (логотип). Не меняется — скрытие через transform, без скачка страницы и скролла. */
 const HEADER_BAR_HEIGHT = 48;
@@ -34,4 +35,9 @@ export const StickyHeaderWrap = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
+
+  ${media.max430} {
+    display: none;
+  }
 `;
+

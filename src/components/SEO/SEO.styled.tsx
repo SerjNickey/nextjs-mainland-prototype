@@ -22,6 +22,7 @@ export const AboutBlock = styled.div`
 
   ${media.max540} {
     font-size: 12px;
+    margin: 0 auto 15px auto;
   }
 `;
 
@@ -29,6 +30,10 @@ export const AboutTitle = styled.h1`
   font-size: 20px;
   text-align: center;
   font-weight: 700;
+
+  ${media.max540} {
+    font-size: 12px;
+  }
 `;
 
 export const AboutText = styled.div<IAboutText>`
@@ -54,6 +59,10 @@ export const AboutBody = styled.div`
   width: 100%;
   box-sizing: border-box;
   font-size: 14px;
+
+  ${media.max540} {
+    font-size: 12px;
+  }
 
   p {
     margin: 0 0 8px 0;

@@ -1,6 +1,6 @@
 /**
  * SimpleInput — стили контролируемого инпута с плавающим плейсхолдером.
- * data-placeholder, data-filled, data-error пробрасываются из SimpleInput.tsx.
+ * data-placeholder, data-filled, data-error, data-valid пробрасываются из SimpleInput.tsx.
  */
 import styled, { css, keyframes } from "styled-components";
 import { media } from "../../styles/breakpoints";
@@ -10,6 +10,11 @@ import { media } from "../../styles/breakpoints";
 // -----------------------------------------------------------------------------
 
 const POPUP_GAP = 12;
+const POPUP_USERNAME_MOBILE_EXTRA_LIFT = 20;
+
+/** Высота инпута — плейсхолдер в покое центрируем по ней, не через top: 50% у контейнера */
+const SIMPLE_INPUT_HEIGHT_PX = 44;
+const SIMPLE_INPUT_LABEL_IDLE_TOP_PX = SIMPLE_INPUT_HEIGHT_PX / 2;
 
 const popupFadeIn = keyframes`
   from {
@@ -49,6 +54,10 @@ const popupBase = (minWidth = 250, width?: number) => css`
   ${media.max430} {
     min-width: ${Math.min(minWidth, 180)}px;
   }
+  ${media.max540} {
+    padding: 10px 12px;
+    border-radius: 5px;
+  }
 `;
 
 // -----------------------------------------------------------------------------
@@ -57,6 +66,8 @@ const popupBase = (minWidth = 250, width?: number) => css`
 
 interface StyledInputProps {
   isError?: boolean;
+  /** Успешная валидация (username / email): зелёная рамка */
+  isValid?: boolean;
 }
 
 // -----------------------------------------------------------------------------
@@ -71,8 +82,9 @@ interface StyledInputProps {
  * позиционирования ::before.
  *
  * Плавающий плейсхолдер реализован одним псевдоэлементом ::before:
- * 1) В покое (пустое поле, без фокуса): он визуально «внутри» поля — top: 50%,
- *    transform: translateY(-50%), font-size: 14px, выравнивание по вертикали как у текста инпута.
+ * 1) В покое (пустое поле, без фокуса): он визуально «внутри» поля — top по центру высоты
+ *    инпута (не top: 50% у контейнера: под полем может быть StyledError, и тогда 50% — середина
+ *    «инпут+ошибка», плейсхолдер визуально съезжает). transform: translateY(-50%), font-size: 14px.
  * 2) При фокусе ( :focus-within ) или при заполненном поле ( [data-filled="true"] ):
  *    плейсхолдер плавно уезжает вверх: top: -5px, transform: translateY(0), font-size: 10px.
  * 3) transition на top, transform, font-size, line-height, color даёт анимацию ~0.25s.
@@ -105,8 +117,8 @@ export const SimpleInputContainer = styled.div`
     font-weight: 300;
     pointer-events: none;
 
-    /* Состояние «внутри поля»: по центру по вертикали, размер как у текста инпута */
-    top: 50%;
+    /* Состояние «внутри поля»: центр по высоте инпута (см. SIMPLE_INPUT_HEIGHT_PX) */
+    top: ${SIMPLE_INPUT_LABEL_IDLE_TOP_PX}px;
     transform: translateY(-50%);
     font-size: 14px;
     transition:
@@ -131,10 +143,15 @@ export const SimpleInputContainer = styled.div`
     color: #d70022;
   }
 
-  ${media.max430} {
+  /* Успешная валидация (username / email): цвет плавающего лейбла */
+  &[data-valid="true"]:not([data-error="true"])::before {
+    color: rgb(0, 140, 84);
+  }
+
+  ${media.max540} {
     width: 100%;
     min-width: 0;
-    max-width: 190px;
+    max-width: none;
   }
 `;
 
@@ -154,10 +171,15 @@ export const StyledInput = styled.input<StyledInputProps>`
   width: 100%;
   min-width: 0;
   max-width: 190px;
-  height: 44px;
+  height: ${SIMPLE_INPUT_HEIGHT_PX}px;
   box-sizing: border-box;
   background: rgba(24, 24, 24, 1);
-  border: 1px solid ${({ isError }) => (isError ? "#d70022" : "#5b5b5b")};
+  border: 1px solid
+    ${({ isError, isValid }) => {
+      if (isError) return "#d70022";
+      if (isValid) return "rgb(0, 140, 84)";
+      return "#5b5b5b";
+    }};
   outline: none;
   padding: 0 10px;
   font-family: "Montserrat";
@@ -166,6 +188,10 @@ export const StyledInput = styled.input<StyledInputProps>`
   font-size: 14px;
   color: #ffffff;
   border-radius: 6px;
+
+  ${media.max540} {
+    max-width: none;
+  }
 
   /* Нативный placeholder не показываем — используется только ::before контейнера */
   &::placeholder,
@@ -208,6 +234,7 @@ export const SimpleInputPopup = styled.div<{
   $minWidth?: number;
   $width?: number;
   $maxWidth?: number;
+  $topPlacementMobile?: boolean;
 }>`
   position: absolute;
   right: 100%;
@@ -217,6 +244,27 @@ export const SimpleInputPopup = styled.div<{
   animation: ${popupFadeIn} 0.22s ease-out forwards;
   ${({ $maxWidth }) => $maxWidth != null && `max-width: ${$maxWidth}px;`}
   ${({ $minWidth = 250, $width }) => popupBase($minWidth, $width)}
+  ${({ $topPlacementMobile }) =>
+    $topPlacementMobile &&
+    css`
+      ${media.max540} {
+        left: 0;
+        right: auto;
+        top: ${SIMPLE_INPUT_LABEL_IDLE_TOP_PX}px;
+        margin-right: 0;
+        animation: none;
+        transform: translateY(
+          calc(-100% - ${POPUP_GAP + POPUP_USERNAME_MOBILE_EXTRA_LIFT}px)
+        );
+        &::after {
+          top: auto;
+          right: auto;
+          bottom: -4px;
+          left: 16px;
+          transform: rotate(45deg);
+        }
+      }
+    `}
 `;
 
 /** Попап для рендера в портале (position: fixed). */
@@ -226,15 +274,33 @@ export const SimpleInputPopupPortal = styled.div<{
   $minWidth?: number;
   $width?: number;
   $maxWidth?: number;
+  $topPlacementMobile?: boolean;
 }>`
   position: fixed;
   left: ${({ $left }) => $left}px;
   top: ${({ $top }) => $top}px;
   transform: translateY(-50%);
-  z-index: 1001;
+  z-index: 1401;
   animation: ${popupFadeIn} 0.22s ease-out forwards;
   ${({ $maxWidth }) => $maxWidth != null && `max-width: ${$maxWidth}px;`}
   ${({ $minWidth = 250, $width }) => popupBase($minWidth, $width)}
+  ${({ $topPlacementMobile }) =>
+    $topPlacementMobile &&
+    css`
+      ${media.max540} {
+        animation: none;
+        transform: translateY(
+          calc(-100% - ${POPUP_GAP + POPUP_USERNAME_MOBILE_EXTRA_LIFT}px)
+        );
+        &::after {
+          top: auto;
+          right: auto;
+          bottom: -4px;
+          left: 16px;
+          transform: rotate(45deg);
+        }
+      }
+    `}
 `;
 
 /** Блок правил в попапе: иконка предупреждения + текст (как в PasswordInput). */
@@ -244,6 +310,11 @@ export const SimpleInputPopupRulesBlock = styled.div`
   align-items: center;
   padding: 0 15px;
   gap: 8px;
+
+  ${media.max540} {
+    padding: 0;
+    gap: 6px;
+  }
 `;
 
 export const SimpleInputPopupWarningIcon = styled.span`
@@ -256,6 +327,12 @@ export const SimpleInputPopupWarningIcon = styled.span`
   font-size: 18px;
   color: #ffffff;
   line-height: 1;
+
+  ${media.max540} {
+    width: 16px;
+    height: 16px;
+    font-size: 14px;
+  }
 `;
 
 export const SimpleInputPopupRulesText = styled.p`
@@ -269,4 +346,9 @@ export const SimpleInputPopupRulesText = styled.p`
   color: #ffffff;
   text-transform: none;
   word-wrap: break-word;
+
+  ${media.max540} {
+    font-size: 10px;
+    line-height: 14px;
+  }
 `;
