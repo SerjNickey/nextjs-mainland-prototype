@@ -304,10 +304,10 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
   const lang = yourLang === "en" ? "en" : "ru";
   const copy = POPUP_COPY[lang] ?? POPUP_COPY.en;
   const eyeSrc = showPassword
-    ? eyeOpenedWhite
+    ? eyeOpenedWhite.src
     : value
-      ? eyeClosedWhite
-      : eyeClosedGrey;
+      ? eyeClosedWhite.src
+      : eyeClosedGrey.src;
 
   const popupBody = showValidationPopup ? (
     <>

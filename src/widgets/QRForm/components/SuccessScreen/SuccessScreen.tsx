@@ -25,7 +25,7 @@ const SuccessScreen = () => {
         <span style={{ fontSize: 18, fontWeight: 700 }}>Poker Planets</span>
       )}
       <SuccessFirst>
-        <img src={doneLogo} width={50} height={50} />
+        <img src={doneLogo.src} width={50} height={50} alt="" />
         <SuccessTitle>
           {lang === "ru" ? "Успешно!" : "Registration was successful!"}
         </SuccessTitle>

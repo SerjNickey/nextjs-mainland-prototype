@@ -126,7 +126,7 @@ const SEO: React.FC<ISEO> = ({ lang, data }) => {
         $isOpen={isOpen}
         aria-expanded={isOpen}
       >
-        <img src={arrow} alt="" />
+        <img src={arrow.src} alt="" />
       </S.AboutButton>
     </S.AboutBlock>
   );

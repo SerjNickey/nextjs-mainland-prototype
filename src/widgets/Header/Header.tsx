@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import * as S from "./Header.styled";
 
 interface HeaderProps {
@@ -6,10 +6,10 @@ interface HeaderProps {
 }
 
 const Header = ({ logoSrc }: HeaderProps) => {
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const handleHeaderClick = () => {
-    navigate("/");
+    router.push("/");
   };
 
   return (

@@ -1,13 +1,13 @@
 /**
- * Предзагрузка чанков страниц по пути.
- * Вызывать при onMouseEnter / onMouseDown по табу — к моменту клика чанк часто уже загружен.
+ * Предзагрузка маршрутов Next.js (prefetch RSC).
+ * Вызывать из компонентов с useRouter: onMouseEnter / onMouseDown по табу.
  */
-const preloaders: Record<string, () => Promise<unknown>> = {
-  "/": () => import("./pages/HomePage/HomePage"),
-  "/promos": () => import("./pages/PromosPage/PromosPage"),
-  "/ppsochi": () => import("./pages/SochiPage/SochiPage"),
-  "/poker": () => import("./pages/PokerSchoolPage/PokerSchoolPage"),
-  "/access": () => import("./pages/AccessPage/AccessPage"),
+const preloaders: Record<string, true> = {
+  "/": true,
+  "/promos": true,
+  "/ppsochi": true,
+  "/poker": true,
+  "/access": true,
 };
 
 const normalized = (path: string) => path.replace(/\/$/, "") || "/";
@@ -34,10 +34,13 @@ export function isAppRoutePath(path: string): boolean {
   );
 }
 
-export function preloadRoute(path: string): void {
+export function preloadRoute(
+  router: { prefetch: (href: string) => void },
+  path: string
+): void {
   const key = normalized(path);
   if (preloaders[key]) {
-    preloaders[key]();
+    router.prefetch(key);
   }
 }
 
@@ -50,7 +53,9 @@ export const PRELOADABLE_PATHS = [
   "/access",
 ] as const;
 
-/** Подгрузить чанки всех основных разделов (вызывать с задержкой после mount меню). */
-export function preloadAllRoutes(): void {
-  PRELOADABLE_PATHS.forEach(preloadRoute);
+/** Подгрузить маршруты Next (prefetch) после mount меню. */
+export function preloadAllRoutes(router: {
+  prefetch: (href: string) => void;
+}): void {
+  PRELOADABLE_PATHS.forEach((p) => router.prefetch(p));
 }

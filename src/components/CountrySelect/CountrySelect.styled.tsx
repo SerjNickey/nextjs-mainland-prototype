@@ -140,7 +140,7 @@ export const ToggleButton = styled.button<IToggleButton>`
   justify-content: center;
   background-size: 12px 5px;
   background-image: url(${({ hasValue }) =>
-    hasValue ? arrowWhite : arrowGrey});
+    hasValue ? arrowWhite.src : arrowGrey.src});
   background-position: center;
   background-repeat: no-repeat;
   transform: rotate(${({ isOpened }) => (isOpened ? "180deg" : "0deg")});

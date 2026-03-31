@@ -1,5 +1,6 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { preloadRoute } from "../../../../preloadRoutes";
 import type { MainMenuTab, MoreSocialItem } from "../../../../shared/mainMenu";
 import {
@@ -43,6 +44,7 @@ export function TabWithDropdown({
   onNavigate,
   onCloseDropdown,
 }: TabWithDropdownProps) {
+  const router = useRouter();
   const submenuGroups = normalizeSubmenu(tab.submenu);
   const tabSectionPath = getTabSectionPath(submenuGroups);
   const isMore = isMoreTab(tab);
@@ -87,9 +89,9 @@ export function TabWithDropdown({
         as={isLinkTab ? Link : "button"}
         {...(isLinkTab
           ? {
-              to: tabSectionPath!,
-              onMouseEnter: () => preloadRoute(tabSectionPath!),
-              onMouseDown: () => preloadRoute(tabSectionPath!),
+              href: tabSectionPath!,
+              onMouseEnter: () => preloadRoute(router, tabSectionPath!),
+              onMouseDown: () => preloadRoute(router, tabSectionPath!),
               onClick: handleTabClick,
             }
           : { type: "button" })}

@@ -1,4 +1,4 @@
-import { useLocation } from "react-router-dom";
+import { usePathname } from "next/navigation";
 import * as S from "./PreFooterMobile.styled";
 import ContactBlock from "./components/ContactBlock/ContactBlock";
 import FooterBlocksAccordion from "./components/FooterBlocksAccordion/FooterBlocksAccordion";
@@ -8,7 +8,7 @@ import SocialBlock from "./components/SocialBlock/SocialBlock";
 import { usePreFooterMobileData } from "./usePreFooterMobileData";
 
 const PreFooterMobile = () => {
-  const { pathname } = useLocation();
+  const pathname = usePathname();
   const {
     footerBlocks,
     contactTitle,

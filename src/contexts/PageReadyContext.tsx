@@ -1,3 +1,5 @@
+"use client";
+
 import {
   createContext,
   useCallback,
@@ -6,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useLocation } from "react-router-dom";
+import { usePathname } from "next/navigation";
 import { useSelector } from "react-redux";
 import type { RootState } from "../store";
 import { useGetBasePageQuery } from "../store/basePageApi";
@@ -23,7 +25,7 @@ export function PageReadyProvider({ children }: { children: ReactNode }) {
     (s: RootState) => s.registration?.yourLang ?? "en"
   );
   const { data, isLoading, isFetching } = useGetBasePageQuery(yourLang);
-  const { pathname } = useLocation();
+  const pathname = usePathname();
   const [isRouteReady, setIsRouteReady] = useState(false);
 
   const isBaseLoading = !data || isLoading || isFetching;

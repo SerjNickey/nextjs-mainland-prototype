@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
+import type { StaticImageData } from "next/image";
 
 interface LazyImageProps {
-  src: string;
+  src: string | StaticImageData;
   alt: string;
   className?: string;
   placeholder?: string;
@@ -13,6 +14,7 @@ export const LazyImage = ({
   className,
   placeholder,
 }: LazyImageProps) => {
+  const resolvedSrc = typeof src === "string" ? src : src.src;
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -38,7 +40,7 @@ export const LazyImage = ({
   return (
     <img
       ref={imgRef}
-      src={isInView ? src : placeholder}
+      src={isInView ? resolvedSrc : placeholder}
       alt={alt}
       className={className}
       loading="lazy"

@@ -1,5 +1,6 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { preloadRoute } from "../../../../preloadRoutes";
 import type { MainMenuSubmenuItem } from "../../types";
 import {
@@ -22,6 +23,7 @@ export function SubmenuItemRender({
   showPreview,
   pathname,
 }: SubmenuItemRenderProps) {
+  const router = useRouter();
   if (!isVisibleByActive(item.active, showPreview)) return null;
 
   switch (item.type) {
@@ -34,14 +36,9 @@ export function SubmenuItemRender({
       return internal ? (
         <S.DropdownLink
           key={item.id}
-          as={
-            Link as React.ComponentType<{
-              to: string;
-              children?: React.ReactNode;
-            }>
-          }
-          to={path}
-          onMouseEnter={() => preloadRoute(path)}
+          as={Link}
+          href={path}
+          onMouseEnter={() => preloadRoute(router, path)}
           $current={isCurrent}
         >
           {item.label}
@@ -61,14 +58,9 @@ export function SubmenuItemRender({
       return internal ? (
         <S.DropdownLink
           key={item.id}
-          as={
-            Link as React.ComponentType<{
-              to: string;
-              children?: React.ReactNode;
-            }>
-          }
-          to={path}
-          onMouseEnter={() => preloadRoute(path)}
+          as={Link}
+          href={path}
+          onMouseEnter={() => preloadRoute(router, path)}
           $current={isCurrent}
         >
           {item.title}

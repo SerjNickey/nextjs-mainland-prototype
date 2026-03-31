@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { useHeaderScrollVisibility } from "../../hooks/useHeaderScrollVisibility";
 import * as S from "./HeaderMobile.styled";
 
@@ -7,7 +7,7 @@ interface HeaderMobileProps {
 }
 
 const HeaderMobile = ({ logoSrc }: HeaderMobileProps) => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const headerVisible = useHeaderScrollVisibility({
     thresholdHide: 60,
     thresholdShow: 24,
@@ -15,7 +15,7 @@ const HeaderMobile = ({ logoSrc }: HeaderMobileProps) => {
   });
 
   const handleHeaderClick = () => {
-    navigate("/");
+    router.push("/");
   };
 
   return (

@@ -270,7 +270,7 @@ export const ValidationText = styled.p<{ isValid: boolean }>`
     height: 14px;
     content: "";
     background-image: url(${({ isValid }) =>
-      isValid ? checkboxOn : checkboxOff});
+      isValid ? checkboxOn.src : checkboxOff.src});
     background-size: contain;
   }
 `;

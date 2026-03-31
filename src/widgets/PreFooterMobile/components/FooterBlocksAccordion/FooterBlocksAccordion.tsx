@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import * as S from "./FooterBlocksAccordion.styled";
 import type { FooterBlock } from "../../types";
 import {
@@ -109,7 +109,7 @@ const FooterBlocksAccordion = ({
                         <S.LinkLine
                           key={i}
                           as={Link}
-                          to={to}
+                          href={to}
                           onClick={() => {
                             if (pathname === to) window.scrollTo(0, 0);
                           }}
