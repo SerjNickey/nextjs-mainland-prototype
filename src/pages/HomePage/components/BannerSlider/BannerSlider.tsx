@@ -1,0 +1,151 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import useEmblaCarousel from "embla-carousel-react";
+import Autoplay from "embla-carousel-autoplay";
+import * as S from "./BannerSlider.styled";
+
+type BannerSlide = {
+  title: string;
+  subtitle: string;
+  imageUrl?: string;
+};
+
+type HomePageData = {
+  banner_slider?: Array<{
+    value?: {
+      title?: string;
+      subtitle?: string;
+      image?: {
+        file?: string;
+      };
+    };
+  }>;
+} | null;
+
+const getSlides = (data: HomePageData): BannerSlide[] => {
+  const banners = data?.banner_slider ?? [];
+  if (Array.isArray(banners) && banners.length > 0) {
+    return banners.map((banner, index) => ({
+      title:
+        typeof banner.value?.title === "string" && banner.value.title.trim()
+          ? banner.value.title
+          : `Banner ${index + 1}`,
+      subtitle:
+        typeof banner.value?.subtitle === "string" ? banner.value.subtitle : "",
+      imageUrl:
+        typeof banner.value?.image?.file === "string"
+          ? banner.value.image.file
+          : undefined,
+    }));
+  }
+
+  return [];
+};
+
+interface BannerSliderProps {
+  data?: HomePageData;
+  dotsActive?: boolean;
+}
+
+const BannerSlider = ({ data, dotsActive = true }: BannerSliderProps) => {
+  const slides = useMemo(() => getSlides(data ?? null), [data]);
+  const shouldLoop = slides.length > 1;
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    { loop: shouldLoop, align: "start" },
+    [
+      Autoplay({
+        delay: 5000,
+        stopOnInteraction: false,
+      }),
+    ]
+  );
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+
+    const onSelect = () => {
+      const totalSlides = slides.length;
+      const index = emblaApi.selectedScrollSnap();
+      const normalized =
+        totalSlides > 0
+          ? ((index % totalSlides) + totalSlides) % totalSlides
+          : 0;
+      setSelectedIndex(normalized);
+    };
+
+    emblaApi.reInit({
+      loop: shouldLoop,
+      align: "start",
+    });
+    onSelect();
+
+    emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onSelect);
+
+    return () => {
+      emblaApi.off("select", onSelect);
+      emblaApi.off("reInit", onSelect);
+    };
+  }, [emblaApi, slides.length, shouldLoop]);
+
+  const onNavButtonClick = useCallback((api: typeof emblaApi) => {
+    const autoplay = api?.plugins()?.autoplay;
+    if (!autoplay) return;
+
+    const resetOrStop =
+      autoplay.options.stopOnInteraction === false
+        ? autoplay.reset
+        : autoplay.stop;
+
+    resetOrStop();
+  }, []);
+
+  const scrollTo = useCallback(
+    (index: number) => {
+      if (!emblaApi) return;
+      emblaApi.scrollTo(index);
+      onNavButtonClick(emblaApi);
+    },
+    [emblaApi, onNavButtonClick]
+  );
+
+  const showDots = dotsActive && slides.length > 1;
+
+  if (slides.length === 0) {
+    return null;
+  }
+
+  return (
+    <S.Wrapper>
+      <S.Viewport ref={emblaRef}>
+        <S.Container>
+          {slides.map((slide, index) => (
+            <S.Slide key={`${slide.title}-${index}`}>
+              <S.SlideContent $backgroundUrl={slide.imageUrl}>
+                {/* <S.Title>{slide.title}</S.Title> */}
+                {/* {slide.subtitle && <S.Subtitle>{slide.subtitle}</S.Subtitle>} */}
+              </S.SlideContent>
+            </S.Slide>
+          ))}
+        </S.Container>
+      </S.Viewport>
+      {showDots && (
+        <S.Controls>
+          <S.Dots>
+            {Array.from({ length: slides.length }).map((_, index) => (
+              <S.DotButton
+                key={`banner-dot-${index}`}
+                type="button"
+                $isActive={index === selectedIndex}
+                onClick={() => scrollTo(index)}
+                aria-label={`Go to banner ${index + 1}`}
+              />
+            ))}
+          </S.Dots>
+        </S.Controls>
+      )}
+    </S.Wrapper>
+  );
+};
+
+export default BannerSlider;
