@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { fetchRobotsTxtBody } from "@/lib/seo";
 
+/** Согласовано с `fetchBasePageJson` (revalidate: 60). */
+export const revalidate = 60;
+
 export async function GET() {
   const body = await fetchRobotsTxtBody();
   const txt =
