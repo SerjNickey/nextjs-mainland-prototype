@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import { Suspense } from "react";
 import { Providers } from "./providers";
+import { SeoHeadLinks } from "./seo-head-links";
 
 const montserrat = Montserrat({
   subsets: ["latin", "cyrillic"],
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
   description: "PokerPlanets",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -22,6 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <SeoHeadLinks />
         <link rel="icon" type="image/svg+xml" href="/star.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link

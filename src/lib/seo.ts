@@ -19,7 +19,41 @@ export type BasePagePayload = Record<string, unknown> & {
   meta_description?: string;
   tags?: string[];
   robots_txt?: string;
+  meta?: { tags?: string[] };
 };
+
+/** Собирает строки `<link ...>` из корня ответа и из `meta.tags` (Wagtail). */
+export function collectTagsFromPayload(
+  payload: BasePagePayload | null
+): string[] {
+  if (!payload) return [];
+  const fromRoot = Array.isArray(payload.tags) ? payload.tags : [];
+  const metaTags = Array.isArray(payload.meta?.tags) ? payload.meta.tags : [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const t of [...fromRoot, ...metaTags]) {
+    if (typeof t !== "string" || !t.trim()) continue;
+    if (seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+  }
+  return out;
+}
+
+/** Разбор одной HTML-строки `<link ...>` в пропсы для React `<link />`. */
+export function parseLinkTagHtml(html: string): {
+  rel?: string;
+  href?: string;
+  hrefLang?: string;
+} | null {
+  const trimmed = html.trim();
+  if (!/<link\b/i.test(trimmed)) return null;
+  const rel = trimmed.match(/rel\s*=\s*["']([^"']+)["']/i)?.[1];
+  const href = trimmed.match(/href\s*=\s*["']([^"']+)["']/i)?.[1];
+  const hrefLang = trimmed.match(/hreflang\s*=\s*["']([^"']+)["']/i)?.[1];
+  if (!href) return null;
+  return { rel, href, hrefLang };
+}
 
 export async function fetchBasePageJson(
   locale: string
@@ -32,37 +66,6 @@ export async function fetchBasePageJson(
   } catch {
     return null;
   }
-}
-
-/** Парсинг `<link rel="canonical"` и `alternate` + hreflang из массива HTML-строк. */
-function parseTagsForAlternates(tags: string[] | undefined): {
-  canonical?: string;
-  languages: Record<string, string>;
-} {
-  const languages: Record<string, string> = {};
-  let canonical: string | undefined;
-
-  if (!Array.isArray(tags)) return { languages: {} };
-
-  for (const raw of tags) {
-    const tag = raw.trim();
-    if (!tag) continue;
-
-    if (/rel\s*=\s*["']canonical["']/i.test(tag)) {
-      const m = tag.match(/href\s*=\s*["']([^"']+)["']/i);
-      if (m?.[1]) canonical = m[1];
-      continue;
-    }
-    if (/rel\s*=\s*["']alternate["']/i.test(tag) && /hreflang/i.test(tag)) {
-      const langM = tag.match(/hreflang\s*=\s*["']([^"']+)["']/i);
-      const hrefM = tag.match(/href\s*=\s*["']([^"']+)["']/i);
-      if (langM?.[1] && hrefM?.[1]) {
-        languages[langM[1]] = hrefM[1];
-      }
-    }
-  }
-
-  return { canonical, languages };
 }
 
 export async function buildMetadataForLocale(
@@ -85,18 +88,10 @@ export async function buildMetadataForLocale(
     (typeof data.meta_description === "string" && data.meta_description) ||
     DEFAULT_DESCRIPTION;
 
-  const tags = Array.isArray(data.tags)
-    ? data.tags.filter((t): t is string => typeof t === "string")
-    : [];
-  const { canonical, languages } = parseTagsForAlternates(tags);
-
+  // canonical / hreflang — в документе через <SeoHeadLinks /> (см. app/layout.tsx)
   return {
     title,
     description,
-    alternates: {
-      ...(canonical ? { canonical } : {}),
-      ...(Object.keys(languages).length > 0 ? { languages } : {}),
-    },
   };
 }
 
